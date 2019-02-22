@@ -8,7 +8,7 @@ class config():
     high             = 255.
 
     # output config
-    output_path  = "results/q4_train_atari_linear/"
+    output_path  = "results/train_atari_linear/"
     model_output = output_path + "model.weights/"
     log_path     = output_path + "log.txt"
     plot_output  = output_path + "scores.png"
