@@ -36,5 +36,6 @@ class config():
     eps_end            = 0.01
     eps_nsteps         = nsteps_train/2
     learning_start     = 200
+	memory_unit_size   = 256
     use_memory         = False
     

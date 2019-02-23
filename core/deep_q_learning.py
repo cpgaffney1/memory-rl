@@ -220,7 +220,7 @@ class DQN(QN):
             action: (int)
             action_values: (np array) q values for all actions
         """
-        action_values = self.sess.run(self.q_memory, feed_dict={self.s: [state]})[0]
+        action_values = self.sess.run(self.q_memory, feed_dict={self.s: [state], self.})[0]
         return np.argmax(action_values), action_values
 
 
@@ -266,6 +266,7 @@ class DQN(QN):
         self.file_writer.add_summary(summary, t)
         
         return loss_eval, grad_norm_eval
+
 
     def memory_update_step(self, t, replay_buffer, lr):
         """
