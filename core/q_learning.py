@@ -178,11 +178,11 @@ class QN(object):
                 q_input = replay_buffer.encode_recent_observation()
 
                 if self.config.use_memory:
-                	prev_memory = replay_buffer._encode_memory(idx)
-                	best_action, q_values, next_memory = self.get_best_action_with_memory(q_input, prev_memory)
+                    prev_memory = replay_buffer._encode_memory(idx)
+                    best_action, q_values, next_memory = self.get_best_action_with_memory(q_input, prev_memory)
                 else:
-	                best_action, q_values = self.get_best_action(q_input)
-	                # chose action according to current Q and exploration
+                    best_action, q_values = self.get_best_action(q_input)
+                    # chose action according to current Q and exploration
                 action                = exp_schedule.get_action(best_action)
 
                 # store q values
@@ -195,7 +195,7 @@ class QN(object):
                 # store the transition
                 replay_buffer.store_effect(idx, action, reward, done)
                 if self.config.use_memory:
-                	replay_buffer.store_memory(idx, next_memory)
+                    replay_buffer.store_memory(idx, next_memory)
                 state = new_state
 
                 # perform a training step

@@ -87,9 +87,9 @@ class Linear(DQN):
             self.done_mask2 = tf.placeholder(tf.bool,
                                             shape=(None),
                                             name="done_mask2")
-            self.memory2 = tf.placeholder(tf.float32,
+            self.target_memory = tf.placeholder(tf.float32,
                                           shape=(None, self.config.memory_unit_size),
-                                          name='memory2')
+                                          name='target_memory')
         else:
             self.s = tf.placeholder(tf.uint8,
                                      shape=(None, height, width, channels * self.config.state_history),

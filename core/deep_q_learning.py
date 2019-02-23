@@ -116,7 +116,7 @@ class DQN(QN):
         # compute Q values of next state
         sp1 = self.process_state(self.sp1)
         sp2 = self.process_state(self.sp2)
-        self.target_q_bottom, self.target_q_top, _ = self.get_q_values_and_memory_op(sp1, sp2, self.memory2, scope="target_q", reuse=False)
+        self.target_q_bottom, self.target_q_top, _ = self.get_q_values_and_memory_op(sp1, sp2, self.target_memory, scope="target_q", reuse=False)
 
         # add update operator for target network
         self.add_update_target_op("q", "target_q")
@@ -236,7 +236,8 @@ class DQN(QN):
         Returns:
             loss: (Q - Q_target)^2
         """
-        if self.config.use_memory: return memory_update_step(t,replay_buffer,lr)
+        if self.config.use_memory:
+            return self.memory_update_step(t,replay_buffer,lr)
         
         s_batch, a_batch, r_batch, sp_batch, done_mask_batch = replay_buffer.sample(
             self.config.batch_size)
@@ -283,7 +284,7 @@ class DQN(QN):
         """
 
         s_batch1, a_batch1, r_batch1, sp_batch1, done_mask_batch1, memory_batch1, \
-        s_batch2, a_batch2, r_batch2, sp_batch2, done_mask_batch2, memory_batch2 = replay_buffer.sample(
+        s_batch2, a_batch2, r_batch2, sp_batch2, done_mask_batch2, target_memory_batch = replay_buffer.sample(
             self.config.batch_size)
 
         fd = {
@@ -299,7 +300,7 @@ class DQN(QN):
             self.r2: r_batch2,
             self.sp2: sp_batch2,
             self.done_mask2: done_mask_batch2,
-            self.memory2: memory_batch2,
+            self.target_memory: target_memory_batch,
             self.lr: lr,
             # extra info
             self.avg_reward_placeholder: self.avg_reward,
