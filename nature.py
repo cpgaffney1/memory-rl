@@ -71,7 +71,7 @@ class NatureQN(Linear):
         return out
 
 
-    def get_q_values_and_memory_op(self, state, prev_memory, scope, reuse=False):
+    def get_q_values_and_memory_op(self, state1, state2, mem1, scope, reuse=False):
         """
         Returns Q values for all actions
 
@@ -113,24 +113,34 @@ class NatureQN(Linear):
         ################ YOUR CODE HERE - 10-15 lines ################ 
 
         with tf.variable_scope(scope, reuse=reuse):
-            conv1 = tf.layers.conv2d(state, 32, 8, (4,4), 'same', activation=tf.nn.relu)
+            #### Bottom network
+            conv1 = tf.layers.conv2d(state1, 32, 8, (4,4), 'same', activation=tf.nn.relu)
             conv2 = tf.layers.conv2d(conv1, 64, 4, (2,2), 'same', activation=tf.nn.relu)
             conv3 = tf.layers.conv2d(conv2, 64, 3, (1,1), 'same', activation=tf.nn.relu)
             conv3 = tf.layers.flatten(conv3)
 
-            concat_memory = tf.concat([conv3,prev_memory],1)
+            concat_memory = tf.concat([conv3, mem1], 1)
 
-            h = tf.layers.dense(conv3, 512, activation=tf.nn.relu)
+            h = tf.layers.dense(concat_memory, 512, activation=tf.nn.relu)
 
-            q_vals = tf.layers.dense(h, num_actions)
+            q_vals_bottom = tf.layers.dense(h, num_actions)
             next_memory = tf.layers.dense(h, self.config.memory_unit_size)
 
-        vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=scope)
-        print(vars)
-        print()
+            #### Top Network
+            conv1 = tf.layers.conv2d(state2, 32, 8, (4, 4), 'same', activation=tf.nn.relu)
+            conv2 = tf.layers.conv2d(conv1, 64, 4, (2, 2), 'same', activation=tf.nn.relu)
+            conv3 = tf.layers.conv2d(conv2, 64, 3, (1, 1), 'same', activation=tf.nn.relu)
+            conv3 = tf.layers.flatten(conv3)
+
+            concat_memory = tf.concat([conv3, next_memory], 1)
+
+            h = tf.layers.dense(concat_memory, 512, activation=tf.nn.relu)
+
+            q_vals_top = tf.layers.dense(h, num_actions)
+
         ##############################################################
         ######################## END YOUR CODE #######################
-        return q_vals, next_memory
+        return q_vals_bottom, q_vals_top, next_memory
 
 
 """

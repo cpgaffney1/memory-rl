@@ -51,21 +51,62 @@ class Linear(DQN):
         ################YOUR CODE HERE (6-15 lines) ##################
 
         height, width, channels = state_shape
-        self.s = tf.placeholder(tf.uint8, 
-            shape=(None, height, width, channels * self.config.state_history), 
-            name="s")
-        self.a = tf.placeholder(tf.int32, 
-            shape=(None), 
-            name="a")
-        self.r = tf.placeholder(tf.float32, 
-            shape=(None), 
-            name="r")
-        self.sp = tf.placeholder(tf.uint8, 
-            shape=(None, height, width, channels * self.config.state_history), 
-            name="sp")
-        self.done_mask = tf.placeholder(tf.bool, 
-            shape=(None), 
-            name="done_mask")
+
+        if self.config.use_memory:
+            self.s1 = tf.placeholder(tf.uint8,
+                                     shape=(None, height, width, channels * self.config.state_history),
+                                     name="s1")
+            self.a1 = tf.placeholder(tf.int32,
+                                     shape=(None),
+                                     name="a1")
+            self.r1 = tf.placeholder(tf.float32,
+                                     shape=(None),
+                                     name="r1")
+            self.sp1 = tf.placeholder(tf.uint8,
+                                      shape=(None, height, width, channels * self.config.state_history),
+                                      name="sp1")
+            self.done_mask1 = tf.placeholder(tf.bool,
+                                             shape=(None),
+                                             name="done_mask1")
+            self.memory1 = tf.placeholder(tf.float32,
+                                          shape=(None, self.config.memory_unit_size),
+                                          name='memory1')
+
+            self.s2 = tf.placeholder(tf.uint8,
+                                    shape=(None, height, width, channels * self.config.state_history),
+                                    name="s2")
+            self.a2 = tf.placeholder(tf.int32,
+                                    shape=(None),
+                                    name="a2")
+            self.r2 = tf.placeholder(tf.float32,
+                                    shape=(None),
+                                    name="r2")
+            self.sp2 = tf.placeholder(tf.uint8,
+                                     shape=(None, height, width, channels * self.config.state_history),
+                                     name="sp2")
+            self.done_mask2 = tf.placeholder(tf.bool,
+                                            shape=(None),
+                                            name="done_mask2")
+            self.memory2 = tf.placeholder(tf.float32,
+                                          shape=(None, self.config.memory_unit_size),
+                                          name='memory2')
+        else:
+            self.s = tf.placeholder(tf.uint8,
+                                     shape=(None, height, width, channels * self.config.state_history),
+                                     name="s")
+            self.a = tf.placeholder(tf.int32,
+                                     shape=(None),
+                                     name="a")
+            self.r = tf.placeholder(tf.float32,
+                                     shape=(None),
+                                     name="r")
+            self.sp = tf.placeholder(tf.uint8,
+                                      shape=(None, height, width, channels * self.config.state_history),
+                                      name="sp")
+            self.done_mask = tf.placeholder(tf.bool,
+                                             shape=(None),
+                                             name="done_mask")
+
         self.lr = tf.placeholder(tf.float32,
             name="lr")
 
@@ -108,10 +149,7 @@ class Linear(DQN):
         with tf.variable_scope(scope, reuse=reuse):
             state = tf.layers.flatten(state)
             out = tf.layers.dense(state, num_actions)
-            
-        vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=scope)
-        print(vars)
-        print()
+
 
         ##############################################################
         ######################## END YOUR CODE #######################
