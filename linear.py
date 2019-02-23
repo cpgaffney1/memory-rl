@@ -150,7 +150,6 @@ class Linear(DQN):
             state = tf.layers.flatten(state)
             out = tf.layers.dense(state, num_actions)
 
-
         ##############################################################
         ######################## END YOUR CODE #######################
 
@@ -245,6 +244,22 @@ class Linear(DQN):
 
         ##############################################################
         ######################## END YOUR CODE #######################
+
+    def add_memory_loss_op(self, q_bottom, q_top, target_q_bottom, target_q_top):
+        num_actions = self.env.action_space.n
+
+        done_mask1 = tf.cast(self.done_mask1, tf.float32)
+        done_mask2 = tf.cast(self.done_mask2, tf.float32)
+        q_bottom = tf.reduce_sum(q_bottom * tf.one_hot(self.a1, num_actions), axis=1)
+        q_samp_bottom = self.r1 + (tf.ones(self.config.batch_size) - done_mask1) * self.config.gamma * tf.reduce_max(
+            target_q_bottom,
+            axis=1)
+        q_top = tf.reduce_sum(q_top * tf.one_hot(self.a2, num_actions), axis=1)
+        q_samp_top = self.r2 + (tf.ones(self.config.batch_size) - done_mask2) * self.config.gamma * tf.reduce_max(
+            target_q_top,
+            axis=1)
+        self.loss = tf.reduce_mean(tf.squared_difference(q_samp_bottom, q_bottom)) + tf.reduce_mean(
+            tf.squared_difference(q_samp_top, q_top))
 
 
     def add_optimizer_op(self, scope):

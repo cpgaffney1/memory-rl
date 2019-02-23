@@ -279,16 +279,23 @@ class DQN(QN):
         """
 
         s_batch1, a_batch1, r_batch1, sp_batch1, done_mask_batch1, memory_batch1, \
-        s_batch, a_batch, r_batch, sp_batch, done_mask_batch, memory_batch2 = replay_buffer.sample(
+        s_batch2, a_batch2, r_batch2, sp_batch2, done_mask_batch2, memory_batch2 = replay_buffer.sample(
             self.config.batch_size)
 
         fd = {
             # inputs
-            self.s: s_batch,
-            self.a: a_batch,
-            self.r: r_batch,
-            self.sp: sp_batch,
-            self.done_mask: done_mask_batch,
+            self.s1: s_batch1,
+            self.a1: a_batch1,
+            self.r1: r_batch1,
+            self.sp1: sp_batch1,
+            self.done_mask1: done_mask_batch1,
+            self.memory1: memory_batch1,
+            self.s2: s_batch2,
+            self.a2: a_batch2,
+            self.r2: r_batch2,
+            self.sp2: sp_batch2,
+            self.done_mask2: done_mask_batch2,
+            self.memory2: memory_batch2,
             self.lr: lr,
             # extra info
             self.avg_reward_placeholder: self.avg_reward,
@@ -300,8 +307,9 @@ class DQN(QN):
             self.eval_reward_placeholder: self.eval_reward,
         }
 
-        loss_eval, grad_norm_eval, summary, _ = self.sess.run([self.loss, self.grad_norm,
-                                                               self.merged, self.train_op], feed_dict=fd)
+        loss_eval, grad_norm_eval, summary, _, memory1 = self.sess.run([self.loss, self.grad_norm,
+                                                               self.merged, self.train_op,
+                                                               self.memory1], feed_dict=fd)
 
         # tensorboard stuff
         self.file_writer.add_summary(summary, t)
