@@ -221,8 +221,8 @@ class DQN(QN):
             action: (int)
             action_values: (np array) q values for all actions
         """
-        action_values = self.sess.run(self.q_memory, feed_dict={self.s: [state], self.})[0]
-        return np.argmax(action_values), action_values
+        action_values, next_memory = self.sess.run([self.q_bottom, self.next_memory], feed_dict={self.s1: [state], self.s2: [np.zeros_like(state)], self.memory1: prev_memory})[0]
+        return np.argmax(action_values), action_values, next_memory
 
 
     def update_step(self, t, replay_buffer, lr):
@@ -236,7 +236,8 @@ class DQN(QN):
         Returns:
             loss: (Q - Q_target)^2
         """
-
+        if self.config.use_memory: return memory_update_step(t,replay_buffer,lr)
+        
         s_batch, a_batch, r_batch, sp_batch, done_mask_batch = replay_buffer.sample(
             self.config.batch_size)
 
