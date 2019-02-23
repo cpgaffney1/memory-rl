@@ -6,6 +6,7 @@ import time
 from core.q_learning import QN
 
 
+
 class DQN(QN):
     """
     Abstract class for Deep Q Learning
