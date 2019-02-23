@@ -100,6 +100,7 @@ class DQN(QN):
         self.add_optimizer_op("q")
 
     def build_with_memory(self):
+
         """
         Build model by adding all necessary variables
         """
