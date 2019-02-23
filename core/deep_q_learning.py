@@ -208,6 +208,20 @@ class DQN(QN):
         action_values = self.sess.run(self.q, feed_dict={self.s: [state]})[0]
         return np.argmax(action_values), action_values
 
+    def get_best_action_with_memory(self, state, prev_memory):
+        """
+        Return best action
+
+        Args:
+            state: 4 consecutive observations from gym
+            prev_memory: memory unit from previous iteration
+        Returns:
+            action: (int)
+            action_values: (np array) q values for all actions
+        """
+        action_values = self.sess.run(self.q_memory, feed_dict={self.s: [state]})[0]
+        return np.argmax(action_values), action_values
+
 
     def update_step(self, t, replay_buffer, lr):
         """
