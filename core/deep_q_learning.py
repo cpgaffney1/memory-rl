@@ -111,18 +111,18 @@ class DQN(QN):
         # compute Q values of state
         s1 = self.process_state(self.s1)
         s2 = self.process_state(self.s2)
-        self.q = self.get_q_values_and_memory_op(s1, s2, self.memory1, scope="q", reuse=False)
+        self.q_bottom, self.q_top, self.next_memory = self.get_q_values_and_memory_op(s1, s2, self.memory1, scope="q", reuse=False)
 
         # compute Q values of next state
         sp1 = self.process_state(self.sp1)
         sp2 = self.process_state(self.sp2)
-        self.target_q = self.get_q_values_and_memory_op(sp1, sp2, self.memory2, scope="target_q", reuse=False)
+        self.target_q_bottom, self.target_q_top, _ = self.get_q_values_and_memory_op(sp1, sp2, self.memory2, scope="target_q", reuse=False)
 
         # add update operator for target network
         self.add_update_target_op("q", "target_q")
 
         # add square loss
-        self.add_memory_loss_op(self.q_bottom, self.q_top, self.target_q)
+        self.add_memory_loss_op(self.q_bottom, self.q_top, self.target_q_bottom, self.target_q_top)
 
         # add optmizer for the main networks
         self.add_optimizer_op("q")
