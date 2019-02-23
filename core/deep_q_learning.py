@@ -14,13 +14,10 @@ class DQN(QN):
         raise NotImplementedError
 
 
-    def get_q_values_op(self, state, scope, reuse=False):
+    def get_q_values_op(self, scope, reuse=False):
         """
         set Q values, of shape = (batch_size, num_actions)
         """
-        raise NotImplementedError
-
-    def get_q_values_and_memory_op(self, state1, state2, mem1, scope, reuse=False):
         raise NotImplementedError
 
 
@@ -38,12 +35,6 @@ class DQN(QN):
 
 
     def add_loss_op(self, q, target_q):
-        """
-        Set (Q_target - Q)^2
-        """
-        raise NotImplementedError
-
-    def add_memory_loss_op(self, q_bottom, q_top, target_q_bottom, target_q_top):
         """
         Set (Q_target - Q)^2
         """
@@ -95,32 +86,6 @@ class DQN(QN):
 
         # add square loss
         self.add_loss_op(self.q, self.target_q)
-
-        # add optmizer for the main networks
-        self.add_optimizer_op("q")
-
-    def build_with_memory(self):
-        """
-        Build model by adding all necessary variables
-        """
-        # add placeholders
-        self.add_placeholders_op()
-
-        # compute Q values of state
-        s1 = self.process_state(self.s1)
-        s2 = self.process_state(self.s2)
-        self.q = self.get_q_values_and_memory_op(s1, s2, self.memory1, scope="q", reuse=False)
-
-        # compute Q values of next state
-        sp1 = self.process_state(self.sp1)
-        sp2 = self.process_state(self.sp2)
-        self.target_q = self.get_q_values_and_memory_op(sp1, sp2, self.memory2, scope="target_q", reuse=False)
-
-        # add update operator for target network
-        self.add_update_target_op("q", "target_q")
-
-        # add square loss
-        self.add_memory_loss_op(self.q_bottom, self.q_top, self.target_q)
 
         # add optmizer for the main networks
         self.add_optimizer_op("q")
@@ -219,7 +184,7 @@ class DQN(QN):
             action: (int)
             action_values: (np array) q values for all actions
         """
-        action_values = self.sess.run(self.q_memory, feed_dict={self.s: [state]})[0]
+        action_values = self.sess.run(self.q_memory, feed_dict={self.s: [state], self.})[0]
         return np.argmax(action_values), action_values
 
 
@@ -265,6 +230,7 @@ class DQN(QN):
         self.file_writer.add_summary(summary, t)
         
         return loss_eval, grad_norm_eval
+
 
     def memory_update_step(self, t, replay_buffer, lr):
         """
