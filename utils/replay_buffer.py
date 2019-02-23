@@ -1,17 +1,6 @@
 import numpy as np
 import random
 
-def sample_n_unique(sampling_f, n):
-    """Helper function. Given a function `sampling_f` that returns
-    comparable objects, sample n such unique objects.
-    """
-    res = []
-    while len(res) < n:
-        candidate = sampling_f()
-        if candidate not in res:
-            res.append(candidate)
-    return res
-
 class ReplayBuffer(object):
     """
     Taken from Berkeley's Assignment
@@ -47,24 +36,31 @@ class ReplayBuffer(object):
 
         self.next_idx      = 0
         self.num_in_buffer = 0
+        self.next_episode_idx = 0
+        #
+        self.buffer_boundary_idx = 0
 
+        # all are lists of lists. Outer list stores list of obs/action/reward lists that occur in each episode
         self.obs      = None
+        self.mem      = None
         self.action   = None
         self.reward   = None
         self.done     = None
 
     def can_sample(self, batch_size):
+        # TODO check
         """Returns true if `batch_size` different transitions can be sampled from the buffer."""
         return batch_size + 1 <= self.num_in_buffer
 
-    def _encode_sample(self, idxes):
+    def _encode_sample(self, idxes, mem_idxes):
         obs_batch      = np.concatenate([self._encode_observation(idx)[None] for idx in idxes], 0)
         act_batch      = self.action[idxes]
         rew_batch      = self.reward[idxes]
         next_obs_batch = np.concatenate([self._encode_observation(idx + 1)[None] for idx in idxes], 0)
         done_mask      = np.array([1.0 if self.done[idx] else 0.0 for idx in idxes], dtype=np.float32)
+        mem_batch      = np.array([self._encode_memory(idx) for idx in mem_idxes])
 
-        return obs_batch, act_batch, rew_batch, next_obs_batch, done_mask
+        return [obs_batch, act_batch, rew_batch, next_obs_batch, done_mask, mem_batch]
 
 
     def sample(self, batch_size):
@@ -101,8 +97,11 @@ class ReplayBuffer(object):
             Array of shape (batch_size,) and dtype np.float32
         """
         assert self.can_sample(batch_size)
-        idxes = sample_n_unique(lambda: random.randint(0, self.num_in_buffer - 2), batch_size)
-        return self._encode_sample(idxes)
+        idxes = self.sample_n_unique(batch_size)
+        # idxes should be batch_size x 2 array of indices
+        sample1 = self._encode_sample(idxes[:,0], idxes[:,0] - 1)
+        sample2 = self._encode_sample(idxes[:,1], idxes[:,0])
+        return sample1 + sample2
 
     def encode_recent_observation(self):
         """Return the most recent `frame_history_len` frames.
@@ -118,6 +117,7 @@ class ReplayBuffer(object):
         return self._encode_observation((self.next_idx - 1) % self.size)
 
     def _encode_observation(self, idx):
+        original_idx = idx
         end_idx   = idx + 1 # make noninclusive
         start_idx = end_idx - self.frame_history_len
         # this checks if we are using low-dimensional observations, such as RAM
@@ -130,6 +130,10 @@ class ReplayBuffer(object):
         for idx in range(start_idx, end_idx - 1):
             if self.done[idx % self.size]:
                 start_idx = idx + 1
+
+        if self.next_idx == original_idx:
+            start_idx = original_idx
+            end_idx = original_idx + 1
         missing_context = self.frame_history_len - (end_idx - start_idx)
         # if zero padding is needed for missing context
         # or we are on the boundry of the buffer
@@ -142,6 +146,20 @@ class ReplayBuffer(object):
             # this optimization has potential to saves about 30% compute time \o/
             img_h, img_w = self.obs.shape[1], self.obs.shape[2]
             return self.obs[start_idx:end_idx].transpose(1, 2, 0, 3).reshape(img_h, img_w, -1)
+
+    def _encode_memory(self, idx):
+        '''
+
+        :param idx: must be the index of the memory you want. Either candidate1 - 1 or candidate1 (in the case of
+        candidate2
+        :return:
+        '''
+        if idx < 0 or self.done[idx] or idx + 1 == self.next_idx:
+            memory = np.zeros_like(self.mem[0])
+        else:
+            memory = self.mem[idx]
+        return memory
+
 
     def store_frame(self, frame):
         """Store a single frame in the buffer at the next available index, overwriting
@@ -192,3 +210,136 @@ class ReplayBuffer(object):
         self.reward[idx] = reward
         self.done[idx]   = done
 
+    def store_memory(self, idx, memory):
+        if self.mem is None:
+            self.mem = np.empty([self.size] + list(memory.shape), dtype=np.float32)
+        self.mem[idx] = memory
+
+    def sample_n_unique(self, n):
+        res = []
+        while len(res) < n:
+            candidate1 = random.randint(0, self.num_in_buffer - 2)
+            episode_start = candidate1
+            episode_end = candidate1
+
+            if self.done[episode_start]:
+                continue
+
+            while episode_start >= 0 and not self.done[episode_start] and episode_start != self.next_idx - 1:
+                episode_start -= 1
+                # TODO make this wrap around!
+                #if episode_start < 0 and self.num_in_buffer == self.size:
+                #    episode_start =
+            assert (episode_start == -1 or self.done[episode_start])
+            episode_start += 1
+
+            while episode_end < self.num_in_buffer - 1 and not self.done[episode_end] and episode_end != self.next_idx - 1:
+                episode_end += 1
+            assert (episode_end == self.num_in_buffer - 1 or self.done[episode_end])
+
+            candidate2 = random.randint(episode_start, episode_end)
+            while candidate2 == candidate1:
+                candidate2 = random.randint(episode_start, episode_end)
+            assert(candidate1 != candidate2)
+
+            if candidate2 < candidate1:
+                temp = candidate2
+                candidate2 = candidate1
+                candidate1 = temp
+
+            if (candidate1, candidate2) in res:
+                continue
+
+            res.append((candidate1, candidate2))
+
+        # print(np.array(res) + 1)
+        return np.array(res)
+
+def test1():
+    buffer = ReplayBuffer(10, 2)
+    assert(not buffer.can_sample(3))
+
+    x = np.zeros((3, 3, 1))
+    y = np.zeros((5,))
+
+    '''
+    Episodes are:
+    1 2 3 4 
+    5 6 7 8
+    9 10 11 12 13 14 15 16
+    '''
+
+    idx = buffer.store_frame(np.full_like(x, 1))
+    assert(not buffer.can_sample(3))
+    buffer.store_effect(idx, 1, 0, False)
+    buffer.store_memory(idx, np.full_like(y, 1))
+
+    idx = buffer.store_frame(np.full_like(x, 2))
+    buffer.store_effect(idx, 2, 0, False)
+    buffer.store_memory(idx, np.full_like(y, 2))
+    idx = buffer.store_frame(np.full_like(x, 3))
+    buffer.store_effect(idx, 3, 0, False)
+    buffer.store_memory(idx, np.full_like(y, 3))
+    idx = buffer.store_frame(np.full_like(x, 4))
+    buffer.store_effect(idx, 4, 0, True)
+    buffer.store_memory(idx, np.full_like(y, 4))
+
+    idx = buffer.store_frame(np.full_like(x, 5))
+    buffer.store_effect(idx, 5, 0, False)
+    buffer.store_memory(idx, np.full_like(y, 5))
+    idx = buffer.store_frame(np.full_like(x, 6))
+    buffer.store_effect(idx, 6, 0, False)
+    buffer.store_memory(idx, np.full_like(y, 6))
+    idx = buffer.store_frame(np.full_like(x, 7))
+    buffer.store_effect(idx, 7, 0, False)
+    buffer.store_memory(idx, np.full_like(y, 7))
+    idx = buffer.store_frame(np.full_like(x, 8))
+    buffer.store_effect(idx, 8, 0, True)
+    buffer.store_memory(idx, np.full_like(y, 8))
+
+    idx = buffer.store_frame(np.full_like(x, 9))
+    buffer.store_effect(idx, 9, 0, False)
+    buffer.store_memory(idx, np.full_like(y, 9))
+    idx = buffer.store_frame(np.full_like(x, 10))
+    buffer.store_effect(idx, 10, 0, False)
+    buffer.store_memory(idx, np.full_like(y, 10))
+
+    assert(buffer.can_sample(2))
+    '''
+    print(s[0])
+    print(s[5])
+    print(s[6])
+    print(s[-1])
+    '''
+
+    idx = buffer.store_frame(np.full_like(x, 11))
+    buffer.store_effect(idx, 11, 0, False)
+    buffer.store_memory(idx, np.full_like(y, 11))
+    idx = buffer.store_frame(np.full_like(x, 12))
+    buffer.store_effect(idx, 12, 0, False)
+    buffer.store_memory(idx, np.full_like(y, 12))
+    idx = buffer.store_frame(np.full_like(x, 13))
+    buffer.store_effect(idx, 13, 0, False)
+    buffer.store_memory(idx, np.full_like(y, 13))
+    idx = buffer.store_frame(np.full_like(x, 14))
+    buffer.store_effect(idx, 14, 0, False)
+    buffer.store_memory(idx, np.full_like(y, 14))
+    idx = buffer.store_frame(np.full_like(x, 15))
+    buffer.store_effect(idx, 15, 0, False)
+    buffer.store_memory(idx, np.full_like(y, 15))
+    idx = buffer.store_frame(np.full_like(x, 16))
+    buffer.store_effect(idx, 16, 0, True)
+    buffer.store_memory(idx, np.full_like(y, 16))
+    assert (buffer.next_idx == 6)
+
+    s = buffer.sample(1)
+    print(s[0])
+    print(s[5])
+    print(s[6])
+    print(s[-1])
+
+
+
+
+if __name__ == '__main__':
+    test1()
