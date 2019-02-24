@@ -100,8 +100,13 @@ class ActionSpace(object):
         # N, E, S, W in that order
         self.n = 4
 
+    def possible_actions(self):
+        pa = np.arange(0, self.n)
+        np.random.shuffle(pa)
+        return pa
+
     def sample(self):
-        return np.random.randint(0, self.n)
+        return np.random.randint(0, self.n - 1)
 
 '''
 class ObservationSpace(object):
@@ -178,6 +183,10 @@ class ObservationSpace(object):
         if self.verbose:
             print(i)
             print(features)
+
+        features = np.repeat(features, 3, axis=0)
+        features = np.repeat(features, 3, axis=1)
+
         return np.expand_dims(features, -1)
         
         
@@ -202,35 +211,46 @@ class EnvMaze(object):
     Modified 
     """
     # note total nodes will be n squared
-    def __init__(self, shape=(3, 3, 1), n=10, v=False):
+    def __init__(self, shape=(9, 9, 1), n=10, v=False):
         #4 states
-        self.rewards = [0.1, -0.2, 0.0, -0.1]
         self.cur_state = 0
         self.num_iters = 0
         self.n = n
+        self.visited = []
         self.action_space = ActionSpace()
         self.observation_space = ObservationSpace(shape, n, v)
 
     def reset(self):
         self.cur_state = 0
         self.num_iters = 0
+        self.visited = []
         return self.observation_space.states[self.cur_state]
-        
 
-    def step(self, action):
-        assert(0 <= action < 4)
+    def try_step(self, action):
+        assert (0 <= action and action < 4 and action is not None)
         self.num_iters += 1
         if action == 0:
             ns = self.cur_state - self.n if self.cur_state - self.n >= 0 else self.cur_state
         elif action == 1:
             ns = self.cur_state + 1 if self.cur_state % self.n != self.n - 1 else self.cur_state
         elif action == 2:
-            ns = self.cur_state + self.n if self.cur_state + self.n < int(self.n**2) else self.cur_state
+            ns = self.cur_state + self.n if self.cur_state + self.n < int(self.n ** 2) else self.cur_state
         else:
             ns = self.cur_state - 1 if self.cur_state % self.n != 0 else self.cur_state
+        if ns not in self.observation_space.graph[self.cur_state]:
+            ns = self.cur_state
+        return ns
+
+    def step(self, action):
+        ns = self.try_step(action)
         done = (ns == int(self.n**2) - 1)
+        reward = 10. * float(done)
         self.cur_state = ns
-        return self.observation_space.states[self.cur_state], float(done), done, {}
+        self.visited.append(self.cur_state)
+        if len(self.visited) > int(self.n ** 3):
+            done = True
+            reward = 0.0
+        return self.observation_space.states[self.cur_state], reward, done, {}
 
 
     def render(self):

@@ -54,18 +54,19 @@ class NatureQN(Linear):
         """
         ##############################################################
         ################ YOUR CODE HERE - 10-15 lines ################ 
-
+        print('Loading Q network')
         with tf.variable_scope(scope, reuse=reuse):
-            conv1 = tf.layers.conv2d(state, 32, 8, (4,4), 'same', activation=tf.nn.relu)
-            conv2 = tf.layers.conv2d(conv1, 64, 4, (2,2), 'same', activation=tf.nn.relu)
-            conv3 = tf.layers.conv2d(conv2, 64, 3, (1,1), 'same', activation=tf.nn.relu)
-            conv3 = tf.layers.flatten(conv3)
-            h = tf.layers.dense(conv3, 512, activation=tf.nn.relu)
+            cnn_output = state
+            for i in range(len(self.config.cnn_filters)):
+                cnn_output = tf.layers.conv2d(cnn_output, self.config.cnn_filters[i], self.config.cnn_kernel[i],
+                                              padding='valid',
+                                              activation=tf.nn.relu)
+            cnn_output = tf.layers.flatten(cnn_output)
+
+            h = tf.layers.dense(cnn_output, self.config.hidden_size, activation=tf.nn.relu)
+
             out = tf.layers.dense(h, num_actions)
 
-        vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=scope)
-        print(vars)
-        print()
         ##############################################################
         ######################## END YOUR CODE #######################
         return out
@@ -88,7 +89,7 @@ class NatureQN(Linear):
         """
         # this information might be useful
         num_actions = self.env.action_space.n
-
+        print('Loading memory Q network')
         ##############################################################
         """
         TODO: implement the computation of Q values like in the paper
@@ -114,27 +115,29 @@ class NatureQN(Linear):
 
         with tf.variable_scope(scope, reuse=reuse):
             #### Bottom network
-            conv1 = tf.layers.conv2d(state1, 32, 8, (4,4), 'same', activation=tf.nn.relu)
-            conv2 = tf.layers.conv2d(conv1, 64, 4, (2,2), 'same', activation=tf.nn.relu)
-            conv3 = tf.layers.conv2d(conv2, 64, 3, (1,1), 'same', activation=tf.nn.relu)
-            conv3 = tf.layers.flatten(conv3)
+            cnn_output = state1
+            for i in range(len(self.config.cnn_filters)):
+                cnn_output = tf.layers.conv2d(cnn_output, self.config.cnn_filters[i], self.config.cnn_kernel[i], padding='valid',
+                                              activation=tf.nn.relu)
+            cnn_output = tf.layers.flatten(cnn_output)
 
-            concat_memory = tf.concat([conv3, mem1], 1)
+            concat_memory = tf.concat([cnn_output, mem1], 1)
 
-            h = tf.layers.dense(concat_memory, 512, activation=tf.nn.relu)
+            h = tf.layers.dense(concat_memory, self.config.hidden_size, activation=tf.nn.relu)
 
             q_vals_bottom = tf.layers.dense(h, num_actions)
             next_memory = tf.layers.dense(h, self.config.memory_unit_size)
 
             #### Top Network
-            conv1 = tf.layers.conv2d(state2, 32, 8, (4, 4), 'same', activation=tf.nn.relu)
-            conv2 = tf.layers.conv2d(conv1, 64, 4, (2, 2), 'same', activation=tf.nn.relu)
-            conv3 = tf.layers.conv2d(conv2, 64, 3, (1, 1), 'same', activation=tf.nn.relu)
-            conv3 = tf.layers.flatten(conv3)
+            cnn_output = state2
+            for i in range(len(self.config.cnn_filters)):
+                cnn_output = tf.layers.conv2d(cnn_output, self.config.cnn_filters[i], self.config.cnn_kernel[i], padding='valid',
+                                              activation=tf.nn.relu)
+            cnn_output = tf.layers.flatten(cnn_output)
 
-            concat_memory = tf.concat([conv3, next_memory], 1)
+            concat_memory = tf.concat([cnn_output, next_memory], 1)
 
-            h = tf.layers.dense(concat_memory, 512, activation=tf.nn.relu)
+            h = tf.layers.dense(concat_memory, self.config.hidden_size, activation=tf.nn.relu)
 
             q_vals_top = tf.layers.dense(h, num_actions)
 

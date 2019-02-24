@@ -4,9 +4,10 @@ class config():
     render_test = False
     env_name = "Maze"
     overwrite_render = True
-    record = True
+    record = False
     high = 255.
-    maze_size = 10
+    maze_size = 8
+    memory_unit_size = 32
 
     # output config
     output_path = "results/train_nature_memory/"
@@ -41,4 +42,9 @@ class config():
     eps_end = 0.1
     eps_nsteps = 1000000
     learning_start = 50000
-    use_memory = True
+    use_memory = False
+
+    # architecture config
+    cnn_filters = [8]
+    cnn_kernel = [3]
+    hidden_size = 16

@@ -37,7 +37,12 @@ class QN(object):
         self.env = env
 
         # build model
-        self.build()
+        if self.config.use_memory:
+            print('here')
+            self.build_with_memory()
+        else:
+            print('there')
+            self.build()
 
 
     def build(self):
@@ -46,6 +51,11 @@ class QN(object):
         """
         pass
 
+    def build_with_memory(self):
+        """
+        Build model
+        """
+        pass
 
     @property
     def policy(self):
@@ -83,6 +93,8 @@ class QN(object):
         """
         raise NotImplementedError
 
+    def get_best_action_with_memory(self, state, memory):
+        raise NotImplementedError
 
     def get_action(self, state):
         """
@@ -95,6 +107,13 @@ class QN(object):
             return self.env.action_space.sample()
         else:
             return self.get_best_action(state)[0]
+
+    def get_action_with_memory(self, state, memory):
+        best_action, _, memory = self.get_best_action_with_memory(state, memory)
+        if np.random.random() < self.config.soft_epsilon:
+            return self.env.action_space.sample(), memory
+        else:
+            return best_action, memory
 
 
     def update_target_params(self):
@@ -152,7 +171,11 @@ class QN(object):
         """
 
         # initialize replay buffer and variables
-        replay_buffer = ReplayBuffer(self.config.buffer_size, self.config.state_history)
+
+        if self.config.use_memory:
+            replay_buffer = ReplayBuffer(self.config.buffer_size, self.config.state_history, memory_size=self.config.memory_unit_size)
+        else:
+            replay_buffer = ReplayBuffer(self.config.buffer_size, self.config.state_history)
         rewards = deque(maxlen=self.config.num_episodes_test)
         max_q_values = deque(maxlen=1000)
         q_values = deque(maxlen=1000)
@@ -174,16 +197,17 @@ class QN(object):
                 last_record += 1
                 if self.config.render_train: self.env.render()
                 # replay memory stuff
-                idx      = replay_buffer.store_frame(state)
+                idx = replay_buffer.store_frame(state)
                 q_input = replay_buffer.encode_recent_observation()
 
                 if self.config.use_memory:
-                    prev_memory = replay_buffer._encode_memory(idx)
+                    prev_memory = replay_buffer.encode_recent_memory()
                     best_action, q_values, next_memory = self.get_best_action_with_memory(q_input, prev_memory)
+                    next_memory = np.squeeze(next_memory)
                 else:
                     best_action, q_values = self.get_best_action(q_input)
-                    # chose action according to current Q and exploration
-                action                = exp_schedule.get_action(best_action)
+                # chose action according to current Q and exploration
+                action = exp_schedule.get_action(best_action)
 
                 # store q values
                 max_q_values.append(max(q_values))
@@ -286,7 +310,10 @@ class QN(object):
             env = self.env
 
         # replay memory to play
-        replay_buffer = ReplayBuffer(self.config.buffer_size, self.config.state_history)
+        if self.config.use_memory:
+            replay_buffer = ReplayBuffer(self.config.buffer_size, self.config.state_history, memory_size=self.config.memory_unit_size)
+        else:
+            replay_buffer = ReplayBuffer(self.config.buffer_size, self.config.state_history)
         rewards = []
 
         for i in range(num_episodes):
@@ -296,16 +323,25 @@ class QN(object):
                 if self.config.render_test: env.render()
 
                 # store last state in buffer
-                idx     = replay_buffer.store_frame(state)
+                idx = replay_buffer.store_frame(state)
                 q_input = replay_buffer.encode_recent_observation()
 
-                action = self.get_action(q_input)
+                if self.config.use_memory:
+                    prev_memory = replay_buffer.encode_recent_memory()
+                    action, next_memory = self.get_action_with_memory(q_input, prev_memory)
+                    next_memory = np.squeeze(next_memory)
+                else:
+                    action = self.get_action(q_input)
 
                 # perform action in env
                 new_state, reward, done, info = env.step(action)
 
                 # store in replay memory
                 replay_buffer.store_effect(idx, action, reward, done)
+
+                if self.config.use_memory:
+                    replay_buffer.store_memory(idx, next_memory)
+
                 state = new_state
 
                 # count reward

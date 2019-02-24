@@ -5,7 +5,7 @@ class ReplayBuffer(object):
     """
     Taken from Berkeley's Assignment
     """
-    def __init__(self, size, frame_history_len):
+    def __init__(self, size, frame_history_len, memory_size=None):
         """This is a memory efficient implementation of the replay buffer.
 
         The sepecific memory optimizations use here are:
@@ -33,6 +33,7 @@ class ReplayBuffer(object):
         """
         self.size = size
         self.frame_history_len = frame_history_len
+        self.mem_size = memory_size
 
         self.next_idx      = 0
         self.num_in_buffer = 0
@@ -48,7 +49,6 @@ class ReplayBuffer(object):
         self.done     = None
 
     def can_sample(self, batch_size):
-        # TODO check
         """Returns true if `batch_size` different transitions can be sampled from the buffer."""
         return batch_size + 1 <= self.num_in_buffer
 
@@ -58,12 +58,15 @@ class ReplayBuffer(object):
         rew_batch      = self.reward[idxes]
         next_obs_batch = np.concatenate([self._encode_observation(idx + 1)[None] for idx in idxes], 0)
         done_mask      = np.array([1.0 if self.done[idx] else 0.0 for idx in idxes], dtype=np.float32)
-        mem_batch      = np.array([self._encode_memory(idx) for idx in mem_idxes])
+        if mem_idxes is None:
+            return [obs_batch, act_batch, rew_batch, next_obs_batch, done_mask]
+        else:
+            mem_batch = np.array([self._encode_memory(idx) for idx in mem_idxes])
+            mem_batch = np.squeeze(mem_batch)
+            return [obs_batch, act_batch, rew_batch, next_obs_batch, done_mask, mem_batch]
 
-        return [obs_batch, act_batch, rew_batch, next_obs_batch, done_mask, mem_batch]
 
-
-    def sample(self, batch_size):
+    def sample(self, batch_size, use_memory=True):
         """Sample `batch_size` different transitions.
 
         i-th sample transition is the following:
@@ -96,12 +99,25 @@ class ReplayBuffer(object):
         done_mask: np.array
             Array of shape (batch_size,) and dtype np.float32
         """
-        assert self.can_sample(batch_size)
-        idxes = self.sample_n_unique(batch_size)
-        # idxes should be batch_size x 2 array of indices
-        sample1 = self._encode_sample(idxes[:,0], idxes[:,0] - 1)
-        sample2 = self._encode_sample(idxes[:,1], idxes[:,0])
-        return sample1 + sample2
+        while True:
+            try:
+                assert self.can_sample(batch_size)
+                idxes = self.sample_n_unique(batch_size)
+                if use_memory:
+                    # idxes should be batch_size x 2 array of indices
+                    sample1 = self._encode_sample(idxes[:,0], (idxes[:,0] - 1) % self.size)
+                    sample2 = self._encode_sample(idxes[:,1], idxes[:,0])
+                    sample = sample1 + sample2
+                else:
+                    idxes = idxes[:,0]
+                    sample = self._encode_sample(idxes, None)
+                break
+            except Exception as inst:
+                print(type(inst))
+                print(inst.args)
+                print(inst)
+
+        return sample
 
     def encode_recent_observation(self):
         """Return the most recent `frame_history_len` frames.
@@ -115,6 +131,12 @@ class ReplayBuffer(object):
         """
         assert self.num_in_buffer > 0
         return self._encode_observation((self.next_idx - 1) % self.size)
+
+    def encode_recent_memory(self):
+        assert (self.num_in_buffer > 0)
+        # next_idx - 2 to get prev memory
+        prev_memory = np.expand_dims(self._encode_memory((self.next_idx - 2) % self.size), axis=0)
+        return prev_memory
 
     def _encode_observation(self, idx):
         original_idx = idx
@@ -154,10 +176,13 @@ class ReplayBuffer(object):
         candidate2
         :return:
         '''
-        if idx < 0 or self.done[idx] or idx + 1 == self.next_idx:
-            memory = np.zeros_like(self.mem[0])
+        if idx < 0 or self.done[idx] or (idx + 1) % self.size == self.next_idx or self.mem is None:
+            if self.mem is None:
+                assert(self.num_in_buffer == 1)
+            memory = np.zeros(self.mem_size)
         else:
             memory = self.mem[idx]
+        assert(len(memory) == self.mem_size)
         return memory
 
 
@@ -230,12 +255,15 @@ class ReplayBuffer(object):
                 # TODO make this wrap around!
                 #if episode_start < 0 and self.num_in_buffer == self.size:
                 #    episode_start =
-            assert (episode_start == -1 or self.done[episode_start])
+            assert (episode_start == -1 or self.done[episode_start] or episode_start == self.next_idx - 1)
             episode_start += 1
 
             while episode_end < self.num_in_buffer - 1 and not self.done[episode_end] and episode_end != self.next_idx - 1:
                 episode_end += 1
-            assert (episode_end == self.num_in_buffer - 1 or self.done[episode_end])
+            assert (episode_end == self.num_in_buffer - 1 or self.done[episode_end] or episode_end == self.next_idx - 1)
+
+            if episode_end - episode_start <= 1:
+                continue
 
             candidate2 = random.randint(episode_start, episode_end)
             while candidate2 == candidate1:
@@ -256,7 +284,7 @@ class ReplayBuffer(object):
         return np.array(res)
 
 def test1():
-    buffer = ReplayBuffer(10, 2)
+    buffer = ReplayBuffer(10, 2, 5)
     assert(not buffer.can_sample(3))
 
     x = np.zeros((3, 3, 1))

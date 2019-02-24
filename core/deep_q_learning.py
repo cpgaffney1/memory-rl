@@ -221,7 +221,10 @@ class DQN(QN):
             action: (int)
             action_values: (np array) q values for all actions
         """
-        action_values, next_memory = self.sess.run([self.q_bottom, self.next_memory], feed_dict={self.s1: [state], self.s2: [np.zeros_like(state)], self.memory1: prev_memory})[0]
+        action_values, next_memory = self.sess.run([self.q_bottom, self.next_memory], feed_dict={
+            self.s1: [state], self.s2: [np.zeros_like(state)], self.memory1: prev_memory
+        })
+
         return np.argmax(action_values), action_values, next_memory
 
 
@@ -240,7 +243,7 @@ class DQN(QN):
             return self.memory_update_step(t,replay_buffer,lr)
         
         s_batch, a_batch, r_batch, sp_batch, done_mask_batch = replay_buffer.sample(
-            self.config.batch_size)
+            self.config.batch_size, use_memory=False)
 
 
         fd = {
@@ -285,7 +288,7 @@ class DQN(QN):
 
         s_batch1, a_batch1, r_batch1, sp_batch1, done_mask_batch1, memory_batch1, \
         s_batch2, a_batch2, r_batch2, sp_batch2, done_mask_batch2, target_memory_batch = replay_buffer.sample(
-            self.config.batch_size)
+            self.config.batch_size, use_memory=True)
 
         fd = {
             # inputs
@@ -303,6 +306,7 @@ class DQN(QN):
             self.target_memory: target_memory_batch,
             self.lr: lr,
             # extra info
+
             self.avg_reward_placeholder: self.avg_reward,
             self.max_reward_placeholder: self.max_reward,
             self.std_reward_placeholder: self.std_reward,
@@ -312,9 +316,11 @@ class DQN(QN):
             self.eval_reward_placeholder: self.eval_reward,
         }
 
-        loss_eval, grad_norm_eval, summary, _, memory1 = self.sess.run([self.loss, self.grad_norm,
-                                                               self.merged, self.train_op,
-                                                               self.memory1], feed_dict=fd)
+        loss_eval, grad_norm_eval, summary, _, next_memory = self.sess.run([self.loss, self.grad_norm,
+                                                               self.merged,
+                                                               self.train_op,
+                                                               self.next_memory,
+                                                               ], feed_dict=fd)
 
         # tensorboard stuff
         self.file_writer.add_summary(summary, t)

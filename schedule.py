@@ -3,7 +3,7 @@ from utils.test_env import EnvTest
 
 
 class LinearSchedule(object):
-    def __init__(self, eps_begin, eps_end, nsteps):
+    def __init__(self, eps_begin, eps_end, nsteps, env_name):
         """
         Args:
             eps_begin: initial exploration
@@ -14,6 +14,7 @@ class LinearSchedule(object):
         self.eps_begin      = eps_begin
         self.eps_end        = eps_end
         self.nsteps         = nsteps
+        self.env_name = env_name
 
 
     def update(self, t):
@@ -43,7 +44,7 @@ class LinearSchedule(object):
 
 
 class LinearExploration(LinearSchedule):
-    def __init__(self, env, eps_begin, eps_end, nsteps):
+    def __init__(self, env, eps_begin, eps_end, nsteps, env_name):
         """
         Args:
             env: gym environment
@@ -55,7 +56,7 @@ class LinearExploration(LinearSchedule):
                 number of steps taken to linearly decay eps_begin to eps_end
         """
         self.env = env
-        super(LinearExploration, self).__init__(eps_begin, eps_end, nsteps)
+        super(LinearExploration, self).__init__(eps_begin, eps_end, nsteps, env_name)
 
 
     def get_action(self, best_action):
@@ -81,10 +82,21 @@ class LinearExploration(LinearSchedule):
         ##############################################################
         ################ YOUR CODE HERE - 4-5 lines ##################
 
-        if np.random.rand() < self.epsilon:
-            return self.env.action_space.sample()
+        if self.env_name == 'Maze':
+            if np.random.rand() < self.epsilon:
+                possible_actions = np.array(self.env.action_space.possible_actions())
+                np.random.shuffle(possible_actions)
+                for action in possible_actions:
+                    if self.env.try_step(action) not in self.env.visited:
+                        return action
+                return possible_actions[0]
+            else:
+                return best_action
         else:
-            return best_action
+            if np.random.rand() < self.epsilon:
+                return self.env.action_space.sample()
+            else:
+                return best_action
 
         ##############################################################
         ######################## END YOUR CODE #######################
@@ -93,7 +105,7 @@ class LinearExploration(LinearSchedule):
 
 def test1():
     env = EnvTest((5, 5, 1))
-    exp_strat = LinearExploration(env, 1, 0, 10)
+    exp_strat = LinearExploration(env, 1, 0, 10, '')
     
     found_diff = False
     for i in range(10):
@@ -107,7 +119,7 @@ def test1():
 
 def test2():
     env = EnvTest((5, 5, 1))
-    exp_strat = LinearExploration(env, 1, 0, 10)
+    exp_strat = LinearExploration(env, 1, 0, 10, '')
     exp_strat.update(5)
     assert exp_strat.epsilon == 0.5, "Test 2 failed"
     print("Test2: ok")
@@ -115,7 +127,7 @@ def test2():
 
 def test3():
     env = EnvTest((5, 5, 1))
-    exp_strat = LinearExploration(env, 1, 0.5, 10)
+    exp_strat = LinearExploration(env, 1, 0.5, 10, '')
     exp_strat.update(20)
     assert exp_strat.epsilon == 0.5, "Test 3 failed"
     print("Test3: ok")
