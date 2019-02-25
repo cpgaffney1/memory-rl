@@ -38,10 +38,8 @@ class QN(object):
 
         # build model
         if self.config.use_memory:
-            print('here')
             self.build_with_memory()
         else:
-            print('there')
             self.build()
 
 

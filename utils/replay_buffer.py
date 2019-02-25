@@ -35,6 +35,7 @@ class ReplayBuffer(object):
         self.frame_history_len = frame_history_len
         self.mem_size = memory_size
         self.recently_updated_episodes = []
+        self.sample_consecutive = True
 
         self.next_idx      = 0
         self.num_in_buffer = 0
@@ -270,6 +271,16 @@ class ReplayBuffer(object):
             self.mem[i] = np.squeeze(next_memory)
         self.recently_updated_episodes.append((episode_start, until_idx))
 
+    def _batch_lazy_update_memory(self, episode_idxes_to_update, update_memory_func):
+        start_idxes, end_idxes = zip(*episode_idxes_to_update)
+        episode_lens = [tup[1] - tup[0] for tup in episode_idxes_to_update]
+        for i in range(max(episode_lens) + 1):
+            idxes = np.array([start + i for start in start_idxes])
+            prev_mem_batch = np.concatenate([np.expand_dims(self._encode_memory(idx-1), axis=0) for idx in idxes], 0)
+            obs_batch = np.concatenate([self._encode_observation(idx)[None] for idx in idxes], 0)
+            _, _, next_memory = update_memory_func(obs_batch, prev_mem_batch)
+            self.mem[idxes] = np.squeeze(next_memory)
+
     def update_memory(self, update_memory_func):
         for i in range(self.num_in_buffer):
             if i == 0:
@@ -284,6 +295,7 @@ class ReplayBuffer(object):
 
     def sample_n_unique(self, n, update_memory_func=None):
         res = []
+        episode_idxes_to_update = []
         while len(res) < n:
             candidate1 = random.randint(0, self.num_in_buffer - 2)
             episode_start = candidate1
@@ -303,13 +315,17 @@ class ReplayBuffer(object):
             while episode_end < self.num_in_buffer - 1 and not self.done[episode_end] and episode_end != self.next_idx - 1:
                 episode_end += 1
             assert (episode_end == self.num_in_buffer - 1 or self.done[episode_end] or episode_end == self.next_idx - 1)
+            assert (episode_end != candidate1)
 
             if episode_end - episode_start <= 1:
                 continue
 
-            candidate2 = random.randint(episode_start, episode_end)
-            while candidate2 == candidate1:
+            if self.sample_consecutive:
+                candidate2 = candidate1 + 1
+            else:
                 candidate2 = random.randint(episode_start, episode_end)
+                while candidate2 == candidate1:
+                    candidate2 = random.randint(episode_start, episode_end)
             assert(candidate1 != candidate2)
 
             if candidate2 < candidate1:
@@ -320,13 +336,19 @@ class ReplayBuffer(object):
             if (candidate1, candidate2) in res:
                 continue
 
+            '''
             # update episode memory
             if update_memory_func is not None:
                 self._lazy_update_memory(episode_start, episode_end, update_memory_func)
+            '''
 
             res.append((candidate1, candidate2))
+            if (episode_start, episode_end) not in self.recently_updated_episodes:
+                episode_idxes_to_update.append((episode_start, episode_end))
 
-        # print(np.array(res) + 1)
+        # update episode memory
+        if update_memory_func is not None:
+            self._batch_lazy_update_memory(episode_idxes_to_update, update_memory_func)
         return np.array(res)
 
 def test1():
