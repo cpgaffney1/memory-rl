@@ -36,6 +36,7 @@ class ReplayBuffer(object):
         self.mem_size = memory_size
         self.recently_updated_episodes = []
         self.sample_consecutive = True
+        self.batch_mem_update = False
 
         self.next_idx      = 0
         self.num_in_buffer = 0
@@ -259,19 +260,17 @@ class ReplayBuffer(object):
             self.mem = np.empty([self.size] + list(memory.shape), dtype=np.float32)
         self.mem[idx] = memory
 
-    '''
+
     def _lazy_update_memory(self, episode_start, until_idx, update_memory_func):
         if (episode_start, until_idx) in self.recently_updated_episodes:
             return
         for i in range(episode_start, until_idx + 1):
             prev_memory = np.expand_dims(self._encode_memory(i-1), axis=0)
-            obs_input = self._encode_observation(i)
-            if i == episode_start:
-                assert(np.array_equal(prev_memory, np.zeros((1, self.mem_size))))
-            _, _, next_memory = update_memory_func(obs_input, prev_memory)
+            obs_input = np.expand_dims(self._encode_observation(i), axis=0)
+            next_memory = update_memory_func(obs_input, prev_memory)
             self.mem[i] = np.squeeze(next_memory)
         self.recently_updated_episodes.append((episode_start, until_idx))
-    '''
+
 
     def _batch_lazy_update_memory(self, episode_idxes_to_update, update_memory_func):
         start_idxes, end_idxes = zip(*episode_idxes_to_update)
@@ -340,19 +339,19 @@ class ReplayBuffer(object):
             if (candidate1, candidate2) in res:
                 continue
 
-            '''
-            # update episode memory
-            if update_memory_func is not None:
-                self._lazy_update_memory(episode_start, episode_end, update_memory_func)
-            '''
+            if not self.batch_mem_update:
+                # update episode memory
+                if update_memory_func is not None:
+                    self._lazy_update_memory(episode_start, episode_end, update_memory_func)
 
             res.append((candidate1, candidate2))
             if (episode_start, episode_end) not in self.recently_updated_episodes:
                 episode_idxes_to_update.append((episode_start, episode_end))
 
-        # update episode memory
-        if update_memory_func is not None:
-            self._batch_lazy_update_memory(episode_idxes_to_update, update_memory_func)
+        if self.batch_mem_update:
+            # update episode memory
+            if update_memory_func is not None:
+                self._batch_lazy_update_memory(episode_idxes_to_update, update_memory_func)
         return np.array(res)
 
 def test1():
