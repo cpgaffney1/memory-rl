@@ -105,7 +105,7 @@ class ReplayBuffer(object):
         done_mask: np.array
             Array of shape (batch_size,) and dtype np.float32
         """
-        '''
+
         while True:
             try:
                 assert self.can_sample(batch_size)
@@ -124,8 +124,8 @@ class ReplayBuffer(object):
                 print(type(inst))
                 print(inst.args)
                 print(inst)
-        '''
 
+        '''
         assert self.can_sample(batch_size)
         idxes = self.sample_n_unique(batch_size, update_memory_func=update_memory_func)
         if use_memory:
@@ -136,7 +136,7 @@ class ReplayBuffer(object):
         else:
             idxes = idxes[:, 0]
             sample = self._encode_sample(idxes, None)
-
+        '''
         return sample
 
     def encode_recent_observation(self):

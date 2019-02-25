@@ -292,8 +292,6 @@ class DQN(QN):
         """
         if t % self.config.memory_update_freq == 0:
             replay_buffer.reset_recently_updated_episodes()
-            #update_memory_func = self.get_best_action_with_memory
-            #replay_buffer.update_memory(update_memory_func)
 
         s_batch1, a_batch1, r_batch1, sp_batch1, done_mask_batch1, memory_batch1, \
         s_batch2, a_batch2, r_batch2, sp_batch2, done_mask_batch2, target_memory_batch = replay_buffer.sample(
