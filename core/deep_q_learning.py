@@ -290,7 +290,7 @@ class DQN(QN):
         Returns:
             loss: (Q - Q_target)^2
         """
-        if t % self.config.target_update_freq == 0:
+        if t % self.config.memory_update_freq == 0:
             replay_buffer.reset_recently_updated_episodes()
             #update_memory_func = self.get_best_action_with_memory
             #replay_buffer.update_memory(update_memory_func)

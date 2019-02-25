@@ -273,14 +273,14 @@ class ReplayBuffer(object):
 
 
     def _batch_lazy_update_memory(self, episode_idxes_to_update, update_memory_func):
-        start_idxes, end_idxes = zip(*episode_idxes_to_update)
+        start_idxes, _ = zip(*episode_idxes_to_update)
+        start_idxes = np.array(start_idxes)
         episode_lens = [tup[1] - tup[0] for tup in episode_idxes_to_update]
         for i in range(max(episode_lens) + 1):
-            idxes = np.array([start + i for start in start_idxes])
-            prev_mem_batch = np.concatenate([np.expand_dims(self._encode_memory(idx-1), axis=0) for idx in idxes], 0)
-            obs_batch = np.concatenate([self._encode_observation(idx)[None] for idx in idxes], 0)
+            prev_mem_batch = np.concatenate([np.expand_dims(self._encode_memory(start+i-1), axis=0) for start in start_idxes], 0)
+            obs_batch = np.concatenate([self._encode_observation(start+i)[None] for start in start_idxes], 0)
             next_memory = update_memory_func(obs_batch, prev_mem_batch)
-            self.mem[idxes] = np.squeeze(next_memory)
+            self.mem[start_idxes+i] = np.squeeze(next_memory)
 
     '''
     def update_memory(self, update_memory_func):
