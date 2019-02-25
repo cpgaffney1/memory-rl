@@ -22,7 +22,7 @@ class config():
     clip_val = 10
     saving_freq = 250000
     log_freq = 50
-    eval_freq = 250000
+    eval_freq = 10000
     record_freq = 250000
     soft_epsilon = 0.05
 
@@ -31,7 +31,7 @@ class config():
     batch_size = 64
     buffer_size = 1000000
     target_update_freq = 10000
-    memory_update_freq = 10000
+    memory_update_freq = 10
     gamma = 0.99
     learning_freq = 4
     state_history = 4

@@ -216,6 +216,7 @@ class EnvMaze(object):
         self.cur_state = 0
         self.num_iters = 0
         self.n = n
+        self.reward_scale = 10.0
         self.visited = []
         self.action_space = ActionSpace()
         self.observation_space = ObservationSpace(shape, n, v)
@@ -244,7 +245,7 @@ class EnvMaze(object):
     def step(self, action):
         ns = self.try_step(action)
         done = (ns == int(self.n**2) - 1)
-        reward = 10. * float(done)
+        reward = self.reward_scale * float(done)
         self.cur_state = ns
         self.visited.append(self.cur_state)
         if len(self.visited) > int(self.n ** 3):
