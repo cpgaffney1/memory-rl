@@ -259,6 +259,7 @@ class ReplayBuffer(object):
             self.mem = np.empty([self.size] + list(memory.shape), dtype=np.float32)
         self.mem[idx] = memory
 
+    '''
     def _lazy_update_memory(self, episode_start, until_idx, update_memory_func):
         if (episode_start, until_idx) in self.recently_updated_episodes:
             return
@@ -270,6 +271,7 @@ class ReplayBuffer(object):
             _, _, next_memory = update_memory_func(obs_input, prev_memory)
             self.mem[i] = np.squeeze(next_memory)
         self.recently_updated_episodes.append((episode_start, until_idx))
+    '''
 
     def _batch_lazy_update_memory(self, episode_idxes_to_update, update_memory_func):
         start_idxes, end_idxes = zip(*episode_idxes_to_update)
@@ -277,10 +279,11 @@ class ReplayBuffer(object):
         for i in range(max(episode_lens) + 1):
             idxes = np.array([start + i for start in start_idxes])
             prev_mem_batch = np.concatenate([np.expand_dims(self._encode_memory(idx-1), axis=0) for idx in idxes], 0)
-            obs_batch = np.squeeze(np.concatenate([self._encode_observation(idx)[None] for idx in idxes], 0))
-            _, _, next_memory = update_memory_func(obs_batch, prev_mem_batch)
+            obs_batch = np.concatenate([self._encode_observation(idx)[None] for idx in idxes], 0)
+            next_memory = update_memory_func(obs_batch, prev_mem_batch)
             self.mem[idxes] = np.squeeze(next_memory)
 
+    '''
     def update_memory(self, update_memory_func):
         for i in range(self.num_in_buffer):
             if i == 0:
@@ -292,6 +295,7 @@ class ReplayBuffer(object):
             obs_input = self._encode_observation(i)
             _, _, next_memory = update_memory_func(obs_input, prev_memory)
             self.mem[i] = np.squeeze(next_memory)
+    '''
 
     def sample_n_unique(self, n, update_memory_func=None):
         res = []

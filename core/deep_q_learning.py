@@ -227,6 +227,11 @@ class DQN(QN):
 
         return np.argmax(action_values), action_values, next_memory
 
+    def update_memory(self, state, prev_memory):
+        next_memory = self.sess.run(self.next_memory, feed_dict={
+            self.s1: state, self.s2: np.zeros_like(state), self.memory1: prev_memory
+        })[0]
+        return next_memory
 
     def update_step(self, t, replay_buffer, lr):
         """
@@ -292,7 +297,7 @@ class DQN(QN):
 
         s_batch1, a_batch1, r_batch1, sp_batch1, done_mask_batch1, memory_batch1, \
         s_batch2, a_batch2, r_batch2, sp_batch2, done_mask_batch2, target_memory_batch = replay_buffer.sample(
-            self.config.batch_size, use_memory=True, update_memory_func=self.get_best_action_with_memory)
+            self.config.batch_size, use_memory=True, update_memory_func=self.update_memory)
 
         fd = {
             # inputs
