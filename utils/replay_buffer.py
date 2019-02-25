@@ -273,6 +273,8 @@ class ReplayBuffer(object):
 
 
     def _batch_lazy_update_memory(self, episode_idxes_to_update, update_memory_func):
+        if len(episode_idxes_to_update) == 0:
+            return
         start_idxes, _ = zip(*episode_idxes_to_update)
         start_idxes = np.array(start_idxes)
         episode_lens = [tup[1] - tup[0] for tup in episode_idxes_to_update]
