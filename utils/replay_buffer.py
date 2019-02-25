@@ -36,7 +36,7 @@ class ReplayBuffer(object):
         self.mem_size = memory_size
         self.recently_updated_episodes = []
         self.sample_consecutive = True
-        self.batch_mem_update = False
+        self.batch_mem_update = True
 
         self.next_idx      = 0
         self.num_in_buffer = 0
@@ -281,6 +281,7 @@ class ReplayBuffer(object):
             obs_batch = np.concatenate([self._encode_observation(start+i)[None] for start in start_idxes], 0)
             next_memory = update_memory_func(obs_batch, prev_mem_batch)
             self.mem[start_idxes+i] = np.squeeze(next_memory)
+        self.recently_updated_episodes += episode_idxes_to_update
 
     '''
     def update_memory(self, update_memory_func):
