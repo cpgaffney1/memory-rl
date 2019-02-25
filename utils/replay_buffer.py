@@ -277,7 +277,7 @@ class ReplayBuffer(object):
         for i in range(max(episode_lens) + 1):
             idxes = np.array([start + i for start in start_idxes])
             prev_mem_batch = np.concatenate([np.expand_dims(self._encode_memory(idx-1), axis=0) for idx in idxes], 0)
-            obs_batch = np.concatenate([self._encode_observation(idx)[None] for idx in idxes], 0)
+            obs_batch = np.squeeze(np.concatenate([self._encode_observation(idx)[None] for idx in idxes], 0))
             _, _, next_memory = update_memory_func(obs_batch, prev_mem_batch)
             self.mem[idxes] = np.squeeze(next_memory)
 
