@@ -34,6 +34,7 @@ class ReplayBuffer(object):
         self.size = size
         self.frame_history_len = frame_history_len
         self.mem_size = memory_size
+        self.recently_updated_episodes = []
 
         self.next_idx      = 0
         self.num_in_buffer = 0
@@ -47,6 +48,9 @@ class ReplayBuffer(object):
         self.action   = None
         self.reward   = None
         self.done     = None
+
+    def reset_recently_updated_episodes(self):
+        self.recently_updated_episodes = []
 
     def can_sample(self, batch_size):
         """Returns true if `batch_size` different transitions can be sampled from the buffer."""
@@ -66,7 +70,7 @@ class ReplayBuffer(object):
             return [obs_batch, act_batch, rew_batch, next_obs_batch, done_mask, mem_batch]
 
 
-    def sample(self, batch_size, use_memory=True):
+    def sample(self, batch_size, use_memory=True, update_memory_func=None):
         """Sample `batch_size` different transitions.
 
         i-th sample transition is the following:
@@ -99,11 +103,13 @@ class ReplayBuffer(object):
         done_mask: np.array
             Array of shape (batch_size,) and dtype np.float32
         """
+        '''
         while True:
             try:
                 assert self.can_sample(batch_size)
-                idxes = self.sample_n_unique(batch_size)
+                idxes = self.sample_n_unique(batch_size, update_memory_func=update_memory_func)
                 if use_memory:
+                    assert (update_memory_func is not None)
                     # idxes should be batch_size x 2 array of indices
                     sample1 = self._encode_sample(idxes[:,0], (idxes[:,0] - 1) % self.size)
                     sample2 = self._encode_sample(idxes[:,1], idxes[:,0])
@@ -116,6 +122,18 @@ class ReplayBuffer(object):
                 print(type(inst))
                 print(inst.args)
                 print(inst)
+        '''
+
+        assert self.can_sample(batch_size)
+        idxes = self.sample_n_unique(batch_size, update_memory_func=update_memory_func)
+        if use_memory:
+            # idxes should be batch_size x 2 array of indices
+            sample1 = self._encode_sample(idxes[:, 0], (idxes[:, 0] - 1) % self.size)
+            sample2 = self._encode_sample(idxes[:, 1], idxes[:, 0])
+            sample = sample1 + sample2
+        else:
+            idxes = idxes[:, 0]
+            sample = self._encode_sample(idxes, None)
 
         return sample
 
@@ -240,7 +258,31 @@ class ReplayBuffer(object):
             self.mem = np.empty([self.size] + list(memory.shape), dtype=np.float32)
         self.mem[idx] = memory
 
-    def sample_n_unique(self, n):
+    def _lazy_update_memory(self, episode_start, until_idx, update_memory_func):
+        if (episode_start, until_idx) in self.recently_updated_episodes:
+            return
+        for i in range(episode_start, until_idx + 1):
+            prev_memory = np.expand_dims(self._encode_memory(i-1), axis=0)
+            obs_input = self._encode_observation(i)
+            if i == episode_start:
+                assert(np.array_equal(prev_memory, np.zeros((1, self.mem_size))))
+            _, _, next_memory = update_memory_func(obs_input, prev_memory)
+            self.mem[i] = np.squeeze(next_memory)
+        self.recently_updated_episodes.append((episode_start, until_idx))
+
+    def update_memory(self, update_memory_func):
+        for i in range(self.num_in_buffer):
+            if i == 0:
+                prev_memory = np.zeros((1, self.mem_size))
+            else:
+                prev_memory = np.expand_dims(self._encode_memory(i - 1), axis=0)
+                if self.done[i-1]:
+                    assert (np.array_equal(prev_memory, np.zeros((1, self.mem_size))))
+            obs_input = self._encode_observation(i)
+            _, _, next_memory = update_memory_func(obs_input, prev_memory)
+            self.mem[i] = np.squeeze(next_memory)
+
+    def sample_n_unique(self, n, update_memory_func=None):
         res = []
         while len(res) < n:
             candidate1 = random.randint(0, self.num_in_buffer - 2)
@@ -277,6 +319,10 @@ class ReplayBuffer(object):
 
             if (candidate1, candidate2) in res:
                 continue
+
+            # update episode memory
+            if update_memory_func is not None:
+                self._lazy_update_memory(episode_start, episode_end, update_memory_func)
 
             res.append((candidate1, candidate2))
 
