@@ -45,6 +45,6 @@ class config():
     use_memory = True
 
     # architecture config
-    cnn_filters = [8]
-    cnn_kernel = [3]
+    cnn_filters = [16, 8]
+    cnn_kernel = [5, 3]
     hidden_size = 32
