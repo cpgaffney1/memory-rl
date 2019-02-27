@@ -221,11 +221,11 @@ class DQN(QN):
             action: (int)
             action_values: (np array) q values for all actions
         """
-        action_values, next_memory = self.sess.run([self.q_bottom, self.next_memory], feed_dict={
+        action_values, top_action_values, next_memory = self.sess.run([self.q_bottom, self.q_top, self.next_memory], feed_dict={
             self.s1: [state], self.s2: [np.zeros_like(state)], self.memory1: prev_memory
         })
 
-        return np.argmax(action_values), action_values, next_memory
+        return np.argmax(action_values), action_values, top_action_values, next_memory
 
     def update_memory(self, state, prev_memory):
         next_memory = self.sess.run(self.next_memory, feed_dict={
@@ -323,14 +323,20 @@ class DQN(QN):
             self.eval_reward_placeholder: self.eval_reward,
         }
 
-        loss_eval, grad_norm_eval, summary, _, next_memory = self.sess.run([self.loss, self.grad_norm,
+        loss_eval, grad_norm_eval, summary, _, next_memory, q_bottom, q_top = self.sess.run([self.loss, self.grad_norm,
                                                                self.merged,
                                                                self.train_op,
                                                                self.next_memory,
+                                                               self.q_bottom,
+                                                               self.q_top
                                                                ], feed_dict=fd)
 
         # tensorboard stuff
         self.file_writer.add_summary(summary, t)
+
+        if t % self.config.target_update_freq == 0:
+            print(q_bottom[0])
+            print(q_top[0])
 
         return loss_eval, grad_norm_eval
 

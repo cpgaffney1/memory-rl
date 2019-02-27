@@ -20,7 +20,7 @@ class config():
     num_episodes_test = 50
     grad_clip = True
     clip_val = 10
-    saving_freq = 250000
+    saving_freq = 10000
     log_freq = 50
     eval_freq = 10000
     record_freq = 250000
@@ -31,14 +31,14 @@ class config():
     batch_size = 64
     buffer_size = 1000000
     target_update_freq = 10000
-    memory_update_freq = 10
-    gamma = 0.99
+    memory_update_freq = 1000
+    gamma = 0.8
     learning_freq = 4
     state_history = 4
     lr_begin = 0.00025
     lr_end = 0.00005
     lr_nsteps = nsteps_train / 2
-    eps_begin = 1
+    eps_begin = 0.8
     eps_end = 0.1
     eps_nsteps = 1000000
     learning_start = 50000

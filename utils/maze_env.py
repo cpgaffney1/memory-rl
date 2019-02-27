@@ -1,6 +1,10 @@
 import numpy as np  
 from collections import defaultdict 
-  
+from graphviz import Graph as GraphVizGraph
+
+import os
+os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
+
 #Class to represent a graph 
 class Graph: 
     # undirected graph. Do not use edge weights other than 1.
@@ -124,11 +128,18 @@ class ObservationSpace(object):
         self.n = n
         self.verbose = v
         self.graph = self.initialize_graph().KruskalMST().asEdgeList()
+        self.save_graph()
         if self.verbose:
             print(self.graph)
         self.states = [self.generate_features(i) for i in range(int(self.n**2))]
         
-    
+    def save_graph(self):
+        g = GraphVizGraph('Maze')
+        for state in self.graph.keys():
+            for n in self.graph[state]:
+                g.edge(str(state), str(n))
+        #g.view()
+
     def generate_features(self, i):
         n = self.n
         features = np.zeros((3, 3))
@@ -227,7 +238,7 @@ class EnvMaze(object):
         self.visited = []
         return self.observation_space.states[self.cur_state]
 
-    def try_step(self, action):
+    def check_next_step(self, action):
         assert (0 <= action and action < 4 and action is not None)
         self.num_iters += 1
         if action == 0:
@@ -238,14 +249,27 @@ class EnvMaze(object):
             ns = self.cur_state + self.n if self.cur_state + self.n < int(self.n ** 2) else self.cur_state
         else:
             ns = self.cur_state - 1 if self.cur_state % self.n != 0 else self.cur_state
+        return ns
+
+    def try_step(self, action):
+        ns = self.check_next_step(action)
         if ns not in self.observation_space.graph[self.cur_state]:
             ns = self.cur_state
         return ns
 
+    def try_and_penalize_step(self, action):
+        ns = self.check_next_step(action)
+        reward = 0.
+        if ns not in self.observation_space.graph[self.cur_state]:
+            ns = self.cur_state
+            reward = 0.
+        return ns, reward
+
     def step(self, action):
-        ns = self.try_step(action)
+        ns, reward = self.try_and_penalize_step(action)
         done = (ns == int(self.n**2) - 1)
-        reward = self.reward_scale * float(done)
+        if reward == 0.:
+            reward = self.reward_scale * float(done)
         self.cur_state = ns
         self.visited.append(self.cur_state)
         if len(self.visited) > int(self.n ** 3):

@@ -107,11 +107,11 @@ class QN(object):
             return self.get_best_action(state)[0]
 
     def get_action_with_memory(self, state, memory):
-        best_action, _, memory = self.get_best_action_with_memory(state, memory)
+        best_action, bottom_q, top_q, memory = self.get_best_action_with_memory(state, memory)
         if np.random.random() < self.config.soft_epsilon:
-            return self.env.action_space.sample(), memory
+            return self.env.action_space.sample(), bottom_q, top_q, memory
         else:
-            return best_action, memory
+            return best_action, bottom_q, top_q, memory
 
 
     def update_target_params(self):
@@ -200,7 +200,7 @@ class QN(object):
 
                 if self.config.use_memory:
                     prev_memory = replay_buffer.encode_recent_memory()
-                    best_action, q_values, next_memory = self.get_best_action_with_memory(q_input, prev_memory)
+                    best_action, q_values, _, next_memory = self.get_best_action_with_memory(q_input, prev_memory)
                     next_memory = np.squeeze(next_memory)
                 else:
                     best_action, q_values = self.get_best_action(q_input)
@@ -326,10 +326,20 @@ class QN(object):
 
                 if self.config.use_memory:
                     prev_memory = replay_buffer.encode_recent_memory()
-                    action, next_memory = self.get_action_with_memory(q_input, prev_memory)
+                    action, bottom_q, top_q, next_memory = self.get_action_with_memory(q_input, prev_memory)
                     next_memory = np.squeeze(next_memory)
                 else:
                     action = self.get_action(q_input)
+
+                if i == 0 and self.config.use_memory:
+                    with open('log.txt', 'a') as of:
+                        of.write('State = {}\n'.format(env.cur_state))
+                        of.write('Taking action = {}\n'.format(action))
+                        of.write('prev_memory = {}\n'.format(prev_memory[0, :6]))
+                        of.write('next_memory = {}\n'.format(next_memory[:6]))
+                        of.write('bottom_q_values = {}\n'.format(bottom_q))
+                        of.write('top_q_values = {}\n'.format(top_q))
+                        of.write('\n')
 
                 # perform action in env
                 new_state, reward, done, info = env.step(action)
@@ -393,4 +403,10 @@ class QN(object):
         # record one game at the end
         if self.config.record:
             self.record()
-        
+
+    def resume_and_eval(self, path, n_evals=1):
+        self.initialize()
+
+        self.saver.restore(self.sess, path)
+
+        self.evaluate()
