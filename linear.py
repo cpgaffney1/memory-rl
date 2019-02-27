@@ -258,7 +258,10 @@ class Linear(DQN):
         q_samp_top = self.r2 + (tf.ones(self.config.batch_size) - done_mask2) * self.config.gamma * tf.reduce_max(
             target_q_top,
             axis=1)
-        self.loss = tf.reduce_mean(tf.squared_difference(q_samp_bottom, q_bottom)) + tf.reduce_mean(
+
+        alpha = self.config.top_bottom_loss_tradeoff
+
+        self.loss = tf.reduce_mean(alpha * tf.squared_difference(q_samp_bottom, q_bottom)) + (1 - alpha) * tf.reduce_mean(
             tf.squared_difference(q_samp_top, q_top))
 
 

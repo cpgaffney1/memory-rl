@@ -143,10 +143,7 @@ class ObservationSpace(object):
     def generate_features(self, i):
         n = self.n
         features = np.zeros((3, 3))
-        if i == int(self.n ** 2) - 1:
-            features[1,1] = 2.
-        else:
-            features[1,1] = 1.
+        features[1,1] = 1.
         
         north = i - self.n
         if i == 0:

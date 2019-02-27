@@ -6,11 +6,16 @@ from nature import NatureQN
 from utils.maze_env import EnvMaze
 
 from configs.train_maze_memory import config
+import sys
 
 
 if __name__ == '__main__':
     # make env
+    config.output_path = sys.argv[1]
+
     env = EnvMaze(n=config.maze_size)
+
+
 
     # exploration strategy
     exp_schedule = LinearExploration(env, config.eps_begin,

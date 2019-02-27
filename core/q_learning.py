@@ -313,10 +313,12 @@ class QN(object):
         else:
             replay_buffer = ReplayBuffer(self.config.buffer_size, self.config.state_history)
         rewards = []
+        steps = []
 
         for i in range(num_episodes):
             total_reward = 0
             state = env.reset()
+            count = 0
             while True:
                 if self.config.render_test: env.render()
 
@@ -332,7 +334,7 @@ class QN(object):
                     action = self.get_action(q_input)
 
                 if i == 0 and self.config.use_memory:
-                    with open('log.txt', 'a') as of:
+                    with open(self.config.output_path + 'log.txt', 'a') as of:
                         of.write('State = {}\n'.format(env.cur_state))
                         of.write('Taking action = {}\n'.format(action))
                         of.write('prev_memory = {}\n'.format(prev_memory[0, :6]))
@@ -352,19 +354,27 @@ class QN(object):
 
                 state = new_state
 
+                count += 1
+
                 # count reward
                 total_reward += reward
                 if done:
                     break
 
             # updates to perform at the end of an episode
-            rewards.append(total_reward)     
+            rewards.append(total_reward)
+            if total_reward <= 0:
+                steps.append(np.nan)
+            else:
+                steps.append(count)
 
         avg_reward = np.mean(rewards)
+        avg_steps = np.nanmean(steps)
         sigma_reward = np.sqrt(np.var(rewards) / len(rewards))
 
+
         if num_episodes > 1:
-            msg = "Average reward: {:04.2f} +/- {:04.2f}".format(avg_reward, sigma_reward)
+            msg = "Average reward: {:04.2f} +/- {:04.2f}, Average steps: {:04.2f}".format(avg_reward, sigma_reward, avg_steps)
             self.logger.info(msg)
 
         return avg_reward
