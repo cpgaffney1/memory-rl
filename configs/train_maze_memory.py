@@ -10,7 +10,7 @@ class config():
     memory_unit_size = 32
 
     # output config
-    output_path = "results/train_nature_memory/"
+    output_path = "results/train_nature_memory_marker/"
     model_output = output_path + "model.weights/"
     log_path = output_path + "log.txt"
     plot_output = output_path + "scores.png"

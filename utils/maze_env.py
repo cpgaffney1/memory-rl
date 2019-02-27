@@ -1,6 +1,6 @@
 import numpy as np  
 from collections import defaultdict 
-from graphviz import Graph as GraphVizGraph
+#from graphviz import Graph as GraphVizGraph
 
 import os
 os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
@@ -128,7 +128,7 @@ class ObservationSpace(object):
         self.n = n
         self.verbose = v
         self.graph = self.initialize_graph().KruskalMST().asEdgeList()
-        self.save_graph()
+        #self.save_graph()
         if self.verbose:
             print(self.graph)
         self.states = [self.generate_features(i) for i in range(int(self.n**2))]
@@ -143,7 +143,10 @@ class ObservationSpace(object):
     def generate_features(self, i):
         n = self.n
         features = np.zeros((3, 3))
-        features[1,1] = 1.
+        if i == int(self.n ** 2) - 1:
+            features[1,1] = 2.
+        else:
+            features[1,1] = 1.
         
         north = i - self.n
         if i == 0:
@@ -227,7 +230,7 @@ class EnvMaze(object):
         self.cur_state = 0
         self.num_iters = 0
         self.n = n
-        self.reward_scale = 10.0
+        self.reward_scale = 1.0
         self.visited = []
         self.action_space = ActionSpace()
         self.observation_space = ObservationSpace(shape, n, v)
@@ -262,7 +265,7 @@ class EnvMaze(object):
         reward = 0.
         if ns not in self.observation_space.graph[self.cur_state]:
             ns = self.cur_state
-            reward = 0.
+            reward = -0.01
         return ns, reward
 
     def step(self, action):

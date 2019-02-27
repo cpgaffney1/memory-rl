@@ -1,6 +1,5 @@
-import gym
-from utils.preprocess import greyscale
-from utils.wrappers import PreproWrapper, MaxAndSkipEnv
+#from utils.preprocess import greyscale
+#from utils.wrappers import PreproWrapper, MaxAndSkipEnv
 
 from schedule import LinearExploration, LinearSchedule
 from nature import NatureQN
