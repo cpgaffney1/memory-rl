@@ -57,14 +57,6 @@ class ReplayBuffer(object):
     def reset_recently_updated_episodes(self):
         self.recently_updated_episodes = []
 
-    def start_memory_updaters(self):
-        num_workers = 3
-        for i in range(num_workers):
-
-
-    def memory_updater_worker(self):
-
-
     def can_sample(self, batch_size):
         """Returns true if `batch_size` different transitions can be sampled from the buffer."""
         return batch_size + 1 <= self.num_in_buffer

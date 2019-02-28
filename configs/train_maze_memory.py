@@ -1,4 +1,7 @@
-class config():
+class Config(object):
+    def __init__(self):
+        pass
+
     # env config
     render_train = False
     render_test = False
@@ -10,11 +13,12 @@ class config():
     memory_unit_size = 32
 
     # output config
-    output_path = "results/train_nature_memory_marker/"
-    model_output = output_path + "model.weights/"
-    log_path = output_path + "log.txt"
-    plot_output = output_path + "scores.png"
-    record_path = output_path + "monitor/"
+    def set_paths(self, output_path):
+        self.output_path = output_path
+        self.model_output = output_path + "model.weights/"
+        self.log_path = output_path + "log.txt"
+        self.plot_output = output_path + "scores.png"
+        self.record_path = output_path + "monitor/"
 
     # model and training config
     num_episodes_test = 50
