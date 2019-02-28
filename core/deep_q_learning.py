@@ -334,10 +334,10 @@ class DQN(QN):
         # tensorboard stuff
         self.file_writer.add_summary(summary, t)
 
-        if t % self.config.target_update_freq == 0:
+        '''if t % self.config.target_update_freq == 0:
             print(q_bottom[0])
             print(q_top[0])
-
+        '''
         return loss_eval, grad_norm_eval
 
 

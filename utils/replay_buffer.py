@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import threading
 
 class ReplayBuffer(object):
     """
@@ -38,6 +39,8 @@ class ReplayBuffer(object):
         self.sample_consecutive = True
         self.batch_mem_update = True
 
+        self.locked_ranges = []
+
         self.next_idx      = 0
         self.num_in_buffer = 0
         self.next_episode_idx = 0
@@ -53,6 +56,14 @@ class ReplayBuffer(object):
 
     def reset_recently_updated_episodes(self):
         self.recently_updated_episodes = []
+
+    def start_memory_updaters(self):
+        num_workers = 3
+        for i in range(num_workers):
+
+
+    def memory_updater_worker(self):
+
 
     def can_sample(self, batch_size):
         """Returns true if `batch_size` different transitions can be sampled from the buffer."""
