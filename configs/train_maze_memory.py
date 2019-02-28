@@ -25,6 +25,7 @@ class config():
     eval_freq = 10000
     record_freq = 250000
     soft_epsilon = 0.05
+    extended_eval_threshold = 0.5
 
     # nature paper hyper params
     nsteps_train = 5000000

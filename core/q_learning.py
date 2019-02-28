@@ -10,6 +10,7 @@ from collections import deque
 from utils.general import get_logger, Progbar, export_plot
 from utils.replay_buffer import ReplayBuffer
 from utils.preprocess import greyscale
+from utils.maze_env import EnvMaze
 #from utils.wrappers import PreproWrapper, MaxAndSkipEnv
 
 
@@ -252,7 +253,14 @@ class QN(object):
                 # evaluate our policy
                 last_eval = 0
                 print("")
-                scores_eval += [self.evaluate()]
+                score = self.evaluate()
+                if score > self.config.extended_eval_threshold:
+                    self.logger.info('Extended in-sample evaluation...')
+                    self.evaluate(num_episodes=1000)
+                    for _ in range(10):
+                        self.logger.info('Extended out-of-sample evaluation...')
+                        self.evaluate(EnvMaze(n=self.config.maze_size), num_episodes=100)
+                scores_eval += [score]
 
             if (t > self.config.learning_start) and self.config.record and (last_record > self.config.record_freq):
                 self.logger.info("Recording...")
@@ -297,8 +305,11 @@ class QN(object):
         Evaluation with same procedure as the training
         """
         # log our activity only if default call
+        save_paths = False
         if num_episodes is None:
             self.logger.info("Evaluating...")
+        else:
+            save_paths = True
 
         # arguments defaults
         if num_episodes is None:
@@ -333,8 +344,9 @@ class QN(object):
                 else:
                     action = self.get_action(q_input)
 
+
                 if i == 0 and self.config.use_memory:
-                    with open(self.config.output_path + 'log.txt', 'a') as of:
+                    with open(self.config.output_path + 'eval_example_log.txt', 'a') as of:
                         of.write('State = {}\n'.format(env.cur_state))
                         of.write('Taking action = {}\n'.format(action))
                         of.write('prev_memory = {}\n'.format(prev_memory[0, :6]))
@@ -342,6 +354,12 @@ class QN(object):
                         of.write('bottom_q_values = {}\n'.format(bottom_q))
                         of.write('top_q_values = {}\n'.format(top_q))
                         of.write('\n')
+
+                if save_paths:
+                    with open(self.config.output_path + 'path_log.txt', 'a') as of:
+                        of.write("(s, a) = ({}, {})\n".format(env.cur_state, action))
+                        of.write('\n')
+
 
                 # perform action in env
                 new_state, reward, done, info = env.step(action)
@@ -359,6 +377,9 @@ class QN(object):
                 # count reward
                 total_reward += reward
                 if done:
+                    if save_paths:
+                        with open(self.config.output_path + 'path_log.txt', 'a') as of:
+                            of.write('\n')
                     break
 
             # updates to perform at the end of an episode
@@ -369,12 +390,13 @@ class QN(object):
                 steps.append(count)
 
         avg_reward = np.mean(rewards)
-        avg_steps = np.nanmean(steps)
+        percent_completed = np.count_nonzero(~np.isnan(steps)) / len(steps)
         sigma_reward = np.sqrt(np.var(rewards) / len(rewards))
 
 
         if num_episodes > 1:
-            msg = "Average reward: {:04.2f} +/- {:04.2f}, Average steps: {:04.2f}".format(avg_reward, sigma_reward, avg_steps)
+            msg = "Average reward: {:04.2f} +/- {:04.2f}, Percent completed: {:04.2f}, n = {}".format(
+                avg_reward, sigma_reward, percent_completed, len(avg_reward))
             self.logger.info(msg)
 
         return avg_reward
