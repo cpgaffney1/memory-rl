@@ -5,13 +5,16 @@ from schedule import LinearExploration, LinearSchedule
 from nature import NatureQN
 from utils.maze_env import EnvMaze
 
-from configs.train_maze_memory import config
+import configs
+from configs.train_maze_memory import Config
 import sys
 
 
 if __name__ == '__main__':
     # make env
-    config.output_path = sys.argv[1]
+    output_path = sys.argv[1]
+    config = Config()
+    config.set_paths(output_path)
 
     env = EnvMaze(n=config.maze_size)
 
@@ -26,5 +29,6 @@ if __name__ == '__main__':
             config.lr_nsteps, config.env_name)
 
     # train model
+    print(config.output_path)
     model = NatureQN(env, config)
     model.run(exp_schedule, lr_schedule)

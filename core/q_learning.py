@@ -396,7 +396,7 @@ class QN(object):
 
         if num_episodes > 1:
             msg = "Average reward: {:04.2f} +/- {:04.2f}, Percent completed: {:04.2f}, n = {}".format(
-                avg_reward, sigma_reward, percent_completed, len(avg_reward))
+                avg_reward, sigma_reward, percent_completed, len(rewards))
             self.logger.info(msg)
 
         return avg_reward
