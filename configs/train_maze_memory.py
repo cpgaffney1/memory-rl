@@ -33,7 +33,7 @@ class config():
     target_update_freq = 10000
     memory_update_freq = 10000
     gamma = 0.8
-    top_bottom_loss_tradeoff = 0.5
+    top_bottom_loss_tradeoff = 0.2
     learning_freq = 4
     state_history = 4
     lr_begin = 0.00025
