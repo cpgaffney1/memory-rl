@@ -182,7 +182,7 @@ class QN(object):
 
         t = last_eval = last_record = 0 # time control of nb of steps
         scores_eval = [] # list of scores computed at iteration time
-        scores_eval += [self.evaluate()]
+        scores_eval += [self.evaluate()[0]]
         
         prog = Progbar(target=self.config.nsteps_train)
 
@@ -276,7 +276,7 @@ class QN(object):
         # last words
         self.logger.info("- Training done.")
         self.save()
-        scores_eval += [self.evaluate()]
+        scores_eval += [self.evaluate()[0]]
         export_plot(scores_eval, "Scores", self.config.plot_output)
 
         return evaluation_result_list, oos_evalution_result_list
