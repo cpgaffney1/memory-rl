@@ -186,6 +186,9 @@ class QN(object):
         
         prog = Progbar(target=self.config.nsteps_train)
 
+        evaluation_result_list = []
+        oos_evalution_result_list = []
+
         # interact with environment
         while t < self.config.nsteps_train:
             total_reward = 0
@@ -253,18 +256,21 @@ class QN(object):
                 # evaluate our policy
                 last_eval = 0
                 print("")
-                score = self.evaluate()
+                score, complete, length = self.evaluate()
+                if complete > 0:
+                    evaluation_result_list += [(score, complete, length)]
                 if score > self.config.extended_eval_threshold:
                     self.logger.info('Extended in-sample evaluation...')
                     self.evaluate(num_episodes=1000)
                     for _ in range(10):
                         self.logger.info('Extended out-of-sample evaluation...')
-                        self.evaluate(EnvMaze(n=self.config.maze_size), num_episodes=100)
+                        oos_result = self.evaluate(EnvMaze(n=self.config.maze_size), num_episodes=100)
+                        oos_evalution_result_list += [oos_result]
                 scores_eval += [score]
 
             if (t > self.config.learning_start) and self.config.record and (last_record > self.config.record_freq):
                 self.logger.info("Recording...")
-                last_record =0
+                last_record = 0
                 self.record()
 
         # last words
@@ -272,6 +278,8 @@ class QN(object):
         self.save()
         scores_eval += [self.evaluate()]
         export_plot(scores_eval, "Scores", self.config.plot_output)
+
+        return evaluation_result_list, oos_evalution_result_list
 
 
     def train_step(self, t, replay_buffer, lr):
@@ -390,16 +398,17 @@ class QN(object):
                 steps.append(count)
 
         avg_reward = np.mean(rewards)
+        avg_length = np.nanmean(steps)
         percent_completed = np.count_nonzero(~np.isnan(steps)) / len(steps)
         sigma_reward = np.sqrt(np.var(rewards) / len(rewards))
 
 
         if num_episodes > 1:
-            msg = "Average reward: {:04.2f} +/- {:04.2f}, Percent completed: {:04.2f}, n = {}".format(
-                avg_reward, sigma_reward, percent_completed, len(rewards))
+            msg = "Average reward: {:04.2f} +/- {:04.2f}, Percent completed: {:04.2f}, Average length: {:04.2f}, n = {}".format(
+                avg_reward, sigma_reward, percent_completed, avg_length, len(rewards))
             self.logger.info(msg)
 
-        return avg_reward
+        return avg_reward, percent_completed, avg_length
 
 
     def record(self):
@@ -430,11 +439,13 @@ class QN(object):
             self.record()
 
         # model
-        self.train(exp_schedule, lr_schedule)
+        result = self.train(exp_schedule, lr_schedule)
 
         # record one game at the end
         if self.config.record:
             self.record()
+
+        return result
 
     def resume_and_eval(self, path, n_evals=1):
         self.initialize()

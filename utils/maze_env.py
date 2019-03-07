@@ -44,6 +44,41 @@ class Graph:
         else : 
             parent[yroot] = xroot 
             rank[xroot] += 1
+
+    # Function to print a BFS of graph
+    def bfs(self, s=0):
+        traversal_order = []
+
+        g = self.asEdgeList()
+
+        # Mark all the vertices as not visited
+        visited = [False] * (len(g))
+
+        # Create a queue for BFS
+        queue = []
+
+        # Mark the source node as
+        # visited and enqueue it
+        queue.append(s)
+        visited[s] = True
+
+        while queue:
+
+            # Dequeue a vertex from
+            # queue and print it
+            s = queue.pop(0)
+
+            traversal_order += [s]
+
+            # Get all adjacent vertices of the
+            # dequeued vertex s. If a adjacent
+            # has not been visited, then mark it
+            # visited and enqueue it
+            for i in g[s]:
+                if visited[i] == False:
+                    queue.append(i)
+                    visited[i] = True
+        return traversal_order
             
     def asEdgeList(self):
         # returns edge list, ignores weights
@@ -127,7 +162,8 @@ class ObservationSpace(object):
         self.shape = shape
         self.n = n
         self.verbose = v
-        self.graph = self.initialize_graph().KruskalMST().asEdgeList()
+        self.graph_obj = self.initialize_graph().KruskalMST()
+        self.graph = self.graph_obj.asEdgeList()
         #self.save_graph()
         if self.verbose:
             print(self.graph)
@@ -231,6 +267,9 @@ class EnvMaze(object):
         self.visited = []
         self.action_space = ActionSpace()
         self.observation_space = ObservationSpace(shape, n, v)
+
+    def get_bfs_length(self):
+        return len(self.observation_space.graph_obj.bfs(0))
 
     def reset(self):
         self.cur_state = 0
