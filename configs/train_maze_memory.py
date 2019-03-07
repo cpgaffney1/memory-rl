@@ -32,7 +32,7 @@ class Config(object):
     extended_eval_threshold = 0.5
 
     # nature paper hyper params
-    nsteps_train = 5000000
+    nsteps_train = 1000000
     batch_size = 64
     buffer_size = 1000000
     target_update_freq = 10000

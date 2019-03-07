@@ -6,8 +6,7 @@ class Config():
     overwrite_render = True
     record = False
     high = 255.
-    maze_size = 8
-    memory_unit_size = 32
+    maze_size = 10
 
     # output config
     def set_paths(self, output_path):
@@ -47,6 +46,6 @@ class Config():
     use_memory = False
 
     # architecture config
-    cnn_filters = [8]
-    cnn_kernel = [3]
-    hidden_size = 16
+    cnn_filters = [16, 8]
+    cnn_kernel = [5, 3]
+    hidden_size = 32
