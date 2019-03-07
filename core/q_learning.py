@@ -439,13 +439,13 @@ class QN(object):
             self.record()
 
         # model
-        result = self.train(exp_schedule, lr_schedule)
+        evaluation_result_list, oos_evalution_result_list = self.train(exp_schedule, lr_schedule)
 
         # record one game at the end
         if self.config.record:
             self.record()
 
-        return result
+        return evaluation_result_list, oos_evalution_result_list
 
     def resume_and_eval(self, path, n_evals=1):
         self.initialize()
