@@ -325,6 +325,9 @@ class QN(object):
 
         if env is None:
             env = self.env
+            bfs_len = self.bfs_len
+        else:
+            bfs_len = env.get_bfs_length()
 
         # replay memory to play
         if self.config.use_memory:
@@ -398,8 +401,9 @@ class QN(object):
                 steps.append(count)
 
         avg_reward = np.mean(rewards)
-        avg_length = np.nanmean(steps)
-        percent_completed = np.count_nonzero(~np.isnan(steps)) / len(steps)
+
+        avg_length = np.nanmean(steps) - bfs_len # adjust for shortest possible path
+        percent_completed = np.count_nonzero(~np.isnan(steps)) / float(len(steps))
         sigma_reward = np.sqrt(np.var(rewards) / len(rewards))
 
 

@@ -15,8 +15,6 @@ def train_maze(output_path):
 
     env = EnvMaze(n=config.maze_size)
 
-    bfs_len = env.get_bfs_length()
-
     # exploration strategy
     exp_schedule = LinearExploration(env, config.eps_begin,
                                      config.eps_end, config.eps_nsteps, config.env_name)
@@ -28,12 +26,8 @@ def train_maze(output_path):
     # train model
     print(config.output_path)
     model = NatureQN(env, config)
+    model.bfs_len = env.get_bfs_length()
     evaluation_result_list, oos_evalution_result_list = model.run(exp_schedule, lr_schedule)
-    avg_reward, percent_completed, avg_length = zip(*evaluation_result_list)
-    avg_length = [l - bfs_len for l in avg_length]
-
-    evaluation_result_list = zip(avg_reward, percent_completed, avg_length)
-
     return evaluation_result_list, oos_evalution_result_list
 
 
