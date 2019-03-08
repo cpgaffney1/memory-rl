@@ -37,7 +37,7 @@ class Config(object):
     buffer_size = 1000000
     target_update_freq = 10000
     memory_update_freq = 10000
-    gamma = 0.8
+    gamma = 0.99
     top_bottom_loss_tradeoff = 0.5
     learning_freq = 4
     state_history = 4

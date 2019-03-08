@@ -400,9 +400,10 @@ class QN(object):
             else:
                 steps.append(count)
 
+        steps = np.array(steps) - bfs_len # adjust for shortest possible path
         avg_reward = np.mean(rewards)
 
-        avg_length = np.nanmean(steps) - bfs_len # adjust for shortest possible path
+        avg_length = np.nanmean(steps)
         percent_completed = np.count_nonzero(~np.isnan(steps)) / float(len(steps))
         sigma_reward = np.sqrt(np.var(rewards) / len(rewards))
 
