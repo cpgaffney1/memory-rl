@@ -116,33 +116,57 @@ class NatureQN(Linear):
         with tf.variable_scope(scope, reuse=reuse):
             #### Bottom network
             cnn_output = state1
-            for i in range(len(self.config.cnn_filters)):
-                cnn_output = tf.layers.conv2d(cnn_output, self.config.cnn_filters[i], self.config.cnn_kernel[i], padding='valid',
-                                              activation=tf.nn.relu)
+
+            if self.config.atari:
+                for i in range(len(self.config.cnn_filters)):
+                    cnn_output = tf.layers.conv2d(cnn_output, self.config.cnn_filters[i], self.config.cnn_kernel[i],
+                    	                          stride=self.config.cnn_strides[i]
+                                                  padding='same',
+                                                  activation=tf.nn.relu)
+            else:
+                for i in range(len(self.config.cnn_filters)):
+                    cnn_output = tf.layers.conv2d(cnn_output, self.config.cnn_filters[i], self.config.cnn_kernel[i],
+                                                  padding='valid',
+                                                  activation=tf.nn.relu)
+            # for i in range(len(self.config.cnn_filters)):
+                # cnn_output = tf.layers.conv2d(cnn_output, self.config.cnn_filters[i], self.config.cnn_kernel[i], padding='valid',
+                                              # activation=tf.nn.relu)
             cnn_output = tf.layers.flatten(cnn_output)
 
             concat_memory = tf.concat([cnn_output, mem1], 1)
             h = tf.layers.dense(concat_memory, self.config.hidden_size, activation=tf.nn.relu)
 
             q_vals_bottom = tf.layers.dense(h, num_actions)
+            next_memory = tf.layers.dense(h, self.config.memory_unit_size)
 
             ###### EXPERIMENT different path to generate memory
-            cnn_output = state1
-            for i in range(len(self.config.cnn_filters)):
-                cnn_output = tf.layers.conv2d(cnn_output, self.config.cnn_filters[i], self.config.cnn_kernel[i],
-                                              padding='valid',
-                                              activation=tf.nn.relu)
-            cnn_output = tf.layers.flatten(cnn_output)
-            concat_memory = tf.concat([cnn_output, mem1], 1)
+            # cnn_output = state1
+            # for i in range(len(self.config.cnn_filters)):
+            #     cnn_output = tf.layers.conv2d(cnn_output, self.config.cnn_filters[i], self.config.cnn_kernel[i],
+            #                                   padding='valid',
+            #                                   activation=tf.nn.relu)
+            # cnn_output = tf.layers.flatten(cnn_output)
+            # concat_memory = tf.concat([cnn_output, mem1], 1)
 
-            h_mem = tf.layers.dense(concat_memory, self.config.hidden_size, activation=tf.nn.relu)
-            next_memory = tf.layers.dense(h_mem, self.config.memory_unit_size)
+            # h_mem = tf.layers.dense(concat_memory, self.config.hidden_size, activation=tf.nn.relu)
+            # next_memory = tf.layers.dense(h_mem, self.config.memory_unit_size)
 
             #### Top Network
             cnn_output = state2
-            for i in range(len(self.config.cnn_filters)):
-                cnn_output = tf.layers.conv2d(cnn_output, self.config.cnn_filters[i], self.config.cnn_kernel[i], padding='valid',
-                                              activation=tf.nn.relu)
+            if self.config.atari:
+                for i in range(len(self.config.cnn_filters)):
+                    cnn_output = tf.layers.conv2d(cnn_output, self.config.cnn_filters[i], self.config.cnn_kernel[i],
+                    	                          stride=self.config.cnn_strides[i]
+                                                  padding='same',
+                                                  activation=tf.nn.relu)
+            else:
+                for i in range(len(self.config.cnn_filters)):
+                    cnn_output = tf.layers.conv2d(cnn_output, self.config.cnn_filters[i], self.config.cnn_kernel[i],
+                                                  padding='valid',
+                                                  activation=tf.nn.relu)
+            # for i in range(len(self.config.cnn_filters)):
+                # cnn_output = tf.layers.conv2d(cnn_output, self.config.cnn_filters[i], self.config.cnn_kernel[i], padding='valid',
+                                              # activation=tf.nn.relu)
             cnn_output = tf.layers.flatten(cnn_output)
 
             concat_memory = tf.concat([cnn_output, next_memory], 1)
