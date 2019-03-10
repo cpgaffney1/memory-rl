@@ -13,6 +13,8 @@ from train_maze_memory import train_maze
 import matplotlib.pyplot as plt
 
 
+# DO NOT USE
+
 if __name__ == '__main__':
     # make env
     output_path = output_path = sys.argv[1]
@@ -52,3 +54,4 @@ if __name__ == '__main__':
     plt.hist(avg_length)
     plt.savefig(output_path + 'oos_length_hist.png')
     plt.clf()
+

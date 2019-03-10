@@ -4,6 +4,7 @@ from collections import defaultdict
 
 import os
 os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
+from queue import Queue
 
 #Class to represent a graph 
 class Graph: 
@@ -45,41 +46,23 @@ class Graph:
             parent[yroot] = xroot 
             rank[xroot] += 1
 
-    # Function to print a BFS of graph
-    def bfs(self, s=0):
-        traversal_order = []
-
+    def bfs_paths(self, start, goal):
         g = self.asEdgeList()
-
-        # Mark all the vertices as not visited
-        visited = [False] * (len(g))
-
-        # Create a queue for BFS
-        queue = []
-
-        # Mark the source node as
-        # visited and enqueue it
-        queue.append(s)
-        visited[s] = True
-
+        queue = [(start, [start])]
         while queue:
+            (vertex, path) = queue.pop(0)
+            for next in set(g[vertex]) - set(path):
+                if next == goal:
+                    yield path + [next]
+                else:
+                    queue.append((next, path + [next]))
 
-            # Dequeue a vertex from
-            # queue and print it
-            s = queue.pop(0)
+    def shortest_path(self, start, goal):
+        try:
+            return next(self.bfs_paths(start, goal))
+        except StopIteration:
+            return None
 
-            traversal_order += [s]
-
-            # Get all adjacent vertices of the
-            # dequeued vertex s. If a adjacent
-            # has not been visited, then mark it
-            # visited and enqueue it
-            for i in g[s]:
-                if visited[i] == False:
-                    queue.append(i)
-                    visited[i] = True
-        return traversal_order
-            
     def asEdgeList(self):
         # returns edge list, ignores weights
         edge_list = defaultdict(list)
@@ -269,7 +252,7 @@ class EnvMaze(object):
         self.observation_space = ObservationSpace(shape, n, v)
 
     def get_bfs_length(self):
-        return len(self.observation_space.graph_obj.bfs(0))
+        return len(self.observation_space.graph_obj.shortest_path(0, int(self.n ** 2) - 1))
 
     def reset(self):
         self.cur_state = 0

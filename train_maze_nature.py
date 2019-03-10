@@ -29,4 +29,5 @@ if __name__ == '__main__':
 
     # train model
     model = NatureQN(env, config)
+    model.bfs_len = env.get_bfs_length()
     model.run(exp_schedule, lr_schedule)

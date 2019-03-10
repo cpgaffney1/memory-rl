@@ -400,16 +400,18 @@ class QN(object):
             else:
                 steps.append(count)
 
+        steps = np.array(steps) - bfs_len # adjust for shortest possible path
         avg_reward = np.mean(rewards)
 
-        avg_length = np.nanmean(steps) - bfs_len # adjust for shortest possible path
+        avg_length = np.nanmean(steps)
+        sigma_length = np.sqrt(np.nanvar(steps) / len(steps))
         percent_completed = np.count_nonzero(~np.isnan(steps)) / float(len(steps))
         sigma_reward = np.sqrt(np.var(rewards) / len(rewards))
 
 
         if num_episodes > 1:
-            msg = "Average reward: {:04.2f} +/- {:04.2f}, Percent completed: {:04.2f}, Average length: {:04.2f}, n = {}".format(
-                avg_reward, sigma_reward, percent_completed, avg_length, len(rewards))
+            msg = "Average reward: {:04.2f} +/- {:04.2f}, Percent completed: {:04.2f}, Average length: {:04.2f} +/- {:04.2f}, n = {}".format(
+                avg_reward, sigma_reward, percent_completed, avg_length, sigma_length, len(rewards))
             self.logger.info(msg)
 
         return avg_reward, percent_completed, avg_length
