@@ -51,7 +51,7 @@ class Graph:
         queue = [(start, [start])]
         while queue:
             (vertex, path) = queue.pop(0)
-            for next in g[vertex] - set(path):
+            for next in set(g[vertex]) - set(path):
                 if next == goal:
                     yield path + [next]
                 else:

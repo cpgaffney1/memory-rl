@@ -39,8 +39,8 @@ class Config(object):
     memory_update_freq = 10000
     gamma = 0.99
     top_bottom_loss_tradeoff = 0.5
-    learning_freq = 4
-    state_history = 4
+    learning_freq = 1
+    state_history = 1
     lr_begin = 0.00025
     lr_end = 0.00005
     lr_nsteps = nsteps_train / 2
@@ -49,6 +49,9 @@ class Config(object):
     eps_nsteps = 1000000
     learning_start = 50000
     use_memory = True
+    use_rnn = False
+
+    assert(use_memory and not use_rnn)
 
     # architecture config
     cnn_filters = [16, 8]

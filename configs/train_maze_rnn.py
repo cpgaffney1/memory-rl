@@ -8,6 +8,7 @@ class Config():
     high = 255.
     maze_size = 10
 
+
     # output config
     def set_paths(self, output_path):
         self.output_path = output_path
@@ -32,22 +33,26 @@ class Config():
     batch_size = 32
     buffer_size = 1000000
     target_update_freq = 10000
+    memory_update_freq = 10000
     gamma = 0.99
     learning_freq = 1
     state_history = 1
     lr_begin = 0.00025
     lr_end = 0.00005
     lr_nsteps = nsteps_train / 2
+    top_bottom_loss_tradeoff = 0.5
     eps_begin = 1
     eps_end = 0.1
     eps_nsteps = 1000000
     learning_start = 50000
-    use_memory = False
-    use_rnn = False
+    use_memory = True
+    use_rnn = True
 
-    assert(not use_rnn and not use_memory)
+    assert(use_rnn and use_memory)
 
     # architecture config
+    rnn_layers = [32, 32]
     cnn_filters = [16, 8]
     cnn_kernel = [5, 3]
     hidden_size = 32
+    memory_unit_size = 2 * hidden_size
