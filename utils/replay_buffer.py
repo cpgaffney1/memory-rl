@@ -109,24 +109,24 @@ class ReplayBuffer(object):
             Array of shape (batch_size,) and dtype np.float32
         """
 
-        while True:
-            try:
-                assert self.can_sample(batch_size)
-                idxes = self.sample_n_unique(batch_size, update_memory_func=update_memory_func)
-                if use_memory:
-                    assert (update_memory_func is not None)
-                    # idxes should be batch_size x 2 array of indices
-                    sample1 = self._encode_sample(idxes[:,0], (idxes[:,0] - 1) % self.size)
-                    sample2 = self._encode_sample(idxes[:,1], idxes[:,0])
-                    sample = sample1 + sample2
-                else:
-                    idxes = idxes[:,0]
-                    sample = self._encode_sample(idxes, None)
-                break
-            except Exception as inst:
-                print(type(inst))
-                print(inst.args)
-                print(inst)
+        #while True:
+        #    try:
+        assert self.can_sample(batch_size)
+        idxes = self.sample_n_unique(batch_size, update_memory_func=update_memory_func)
+        if use_memory:
+            assert (update_memory_func is not None)
+            # idxes should be batch_size x 2 array of indices
+            sample1 = self._encode_sample(idxes[:,0], (idxes[:,0] - 1) % self.size)
+            sample2 = self._encode_sample(idxes[:,1], idxes[:,0])
+            sample = sample1 + sample2
+        else:
+            idxes = idxes[:,0]
+            sample = self._encode_sample(idxes, None)
+        #        break
+        #    except Exception as inst:
+        #        print(type(inst))
+        #        print(inst.args)
+        #        print(inst)
 
         '''
         assert self.can_sample(batch_size)
@@ -162,6 +162,8 @@ class ReplayBuffer(object):
         return prev_memory
 
     def _encode_observation(self, idx):
+        # For this project state history should always be 1, so no need to get previous frames
+        '''
         original_idx = idx
         end_idx   = idx + 1 # make noninclusive
         start_idx = end_idx - self.frame_history_len
@@ -191,6 +193,9 @@ class ReplayBuffer(object):
             # this optimization has potential to saves about 30% compute time \o/
             img_h, img_w = self.obs.shape[1], self.obs.shape[2]
             return self.obs[start_idx:end_idx].transpose(1, 2, 0, 3).reshape(img_h, img_w, -1)
+        '''
+
+        return self.obs[idx]
 
     def _encode_memory(self, idx):
         '''

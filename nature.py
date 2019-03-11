@@ -162,6 +162,7 @@ class NatureQN(Linear):
 
                 q_vals_bottom = tf.squeeze(q_vals_bottom)
                 q_vals_top = tf.squeeze(q_vals_top)
+                print(next_memory.c)
                 next_memory = tf.concat([next_memory.c, next_memory.h], 1)
 
             else:

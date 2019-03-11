@@ -293,9 +293,12 @@ class DQN(QN):
         if t % self.config.memory_update_freq == 0:
             replay_buffer.reset_recently_updated_episodes()
 
+
         s_batch1, a_batch1, r_batch1, sp_batch1, done_mask_batch1, memory_batch1, \
         s_batch2, a_batch2, r_batch2, sp_batch2, done_mask_batch2, target_memory_batch = replay_buffer.sample(
             self.config.batch_size, use_memory=True, update_memory_func=self.update_memory)
+
+        assert (memory_batch1.shape[1] == self.config.memory_unit_size)
 
         fd = {
             # inputs
@@ -330,6 +333,8 @@ class DQN(QN):
                                                                self.q_bottom,
                                                                self.q_top
                                                                ], feed_dict=fd)
+
+        assert(next_memory.shape[1] == self.config.memory_unit_size)
 
         # tensorboard stuff
         self.file_writer.add_summary(summary, t)
