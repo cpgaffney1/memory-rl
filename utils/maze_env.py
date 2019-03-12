@@ -140,13 +140,19 @@ class ObservationSpace(object):
         self.state_3 = np.random.randint(300, 350, shape, dtype=np.uint16)
         self.states = [self.state_0, self.state_1, self.state_2, self.state_3] 
 '''
+def generate_hard_maze(n):
+    pass
+
 class ObservationSpace(object):
-    def __init__(self, shape, n, v):
+    def __init__(self, shape, n, v, hard):
         self.shape = shape
         self.n = n
         self.verbose = v
-        self.graph_obj = self.initialize_graph().KruskalMST()
-        self.graph = self.graph_obj.asEdgeList()
+        if hard:
+            self.graph = generate_hard_maze(n)
+        else:
+            self.graph_obj = self.initialize_graph().KruskalMST()
+            self.graph = self.graph_obj.asEdgeList()
         #self.save_graph()
         if self.verbose:
             print(self.graph)
@@ -241,7 +247,7 @@ class EnvMaze(object):
     Modified 
     """
     # note total nodes will be n squared
-    def __init__(self, shape=(9, 9, 1), n=10, v=False):
+    def __init__(self, shape=(9, 9, 1), n=10, v=False, hard=False):
         #4 states
         self.cur_state = 0
         self.num_iters = 0
@@ -249,7 +255,7 @@ class EnvMaze(object):
         self.reward_scale = 1.0
         self.visited = []
         self.action_space = ActionSpace()
-        self.observation_space = ObservationSpace(shape, n, v)
+        self.observation_space = ObservationSpace(shape, n, v, hard)
 
     def get_bfs_length(self):
         return len(self.observation_space.graph_obj.shortest_path(0, int(self.n ** 2) - 1))
@@ -306,8 +312,20 @@ class EnvMaze(object):
   
 def test1():
     env = EnvMaze(n=3, v=True)
+
+
+N_TRIALS = 1000
+
+def test2():
+    env = EnvMaze(n=10, hard=True)
+
+def test3():
+    env = EnvMaze(n=10)
+    for _ in N_TRIALS:
+
     
         
 if __name__ == '__main__':
     test1()
+    test2()
     

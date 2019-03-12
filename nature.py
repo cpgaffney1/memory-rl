@@ -184,7 +184,7 @@ class NatureQN(Linear):
                     cnn_output1 = tf.layers.conv2d(cnn_output1, self.config.cnn_filters[i], self.config.cnn_kernel[i],
                                                   padding='valid',
                                                   activation=tf.nn.relu)
-                    cnn_output1 = tf.layers.flatten(cnn_output1)
+                cnn_output1 = tf.layers.flatten(cnn_output1)
                 concat_memory = tf.concat([cnn_output1, mem1], 1)
 
                 h_mem = tf.layers.dense(concat_memory, self.config.hidden_size, activation=tf.nn.relu)
