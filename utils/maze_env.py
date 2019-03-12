@@ -1,5 +1,6 @@
 import numpy as np  
-from collections import defaultdict 
+from collections import defaultdict
+import matplotlib.pyplot as plt
 #from graphviz import Graph as GraphVizGraph
 
 import os
@@ -141,7 +142,23 @@ class ObservationSpace(object):
         self.states = [self.state_0, self.state_1, self.state_2, self.state_3] 
 '''
 def generate_hard_maze(n):
-    pass
+    nodes = np.arange(n)
+    g = defaultdict(list)
+
+    for node in nodes:
+        if node == n - 1:
+            break
+        if node * 2 <= n ** 2 - 1:
+            g[node].append(node * 2)
+        else:
+            g[node].append(0)
+        if node * 2 + 1 <= n ** 2 - 1:
+            g[node].append(node * 2 + 1)
+        else:
+            g[node].append(0)
+
+    return g
+
 
 class ObservationSpace(object):
     def __init__(self, shape, n, v, hard):
@@ -222,7 +239,6 @@ class ObservationSpace(object):
 
         features = np.repeat(features, 3, axis=0)
         features = np.repeat(features, 3, axis=1)
-
         return np.expand_dims(features, -1)
         
         
@@ -313,19 +329,58 @@ class EnvMaze(object):
 def test1():
     env = EnvMaze(n=3, v=True)
 
-
-N_TRIALS = 1000
-
 def test2():
     env = EnvMaze(n=10, hard=True)
+    print('Hard Maze')
+    N_TRIALS = 10000
+    rewards = []
+    completions = []
+    for _ in range(N_TRIALS):
+        reward = 0
+        done = False
+        env.reset()
+        for i in range(int(env.n ** 3)):
+            a = env.action_space.sample()
+            _, r, done, _ = env.step(a)
+            reward += r
+            if done:
+                break
+        rewards += [reward]
+        completions += [int(done)]
+
+    print('Reward = {} +/- {}'.format(np.round(np.mean(rewards), 4), np.round(np.std(rewards), 4)))
+    print('Completion Rate = {} +/- {}'.format(np.round(np.mean(completions), 4), np.round(np.std(completions), 4)))
+    print()
+
 
 def test3():
-    env = EnvMaze(n=10)
-    for _ in N_TRIALS:
-        pass
+    n = 10
+    print('Kruskal Maze')
+    N_TRIALS = 10000
+    rewards = []
+    completions = []
+    for _ in range(N_TRIALS):
+        env = EnvMaze(n=n)
+        reward = 0
+        done = False
+        for i in range(int(env.n ** 3)):
+            a = env.action_space.sample()
+            _, r, done, _ = env.step(a)
+            reward += r
+            if done:
+                break
+        rewards += [reward]
+        completions += [int(done)]
+
+    print('Reward = {} +/- {}'.format(np.round(np.mean(rewards), 4), np.round(np.std(rewards), 4)))
+    print('Completion Rate = {} +/- {}'.format(np.round(np.mean(completions), 4), np.round(np.std(completions), 4)))
+    print()
+
+
+
     
         
 if __name__ == '__main__':
     test1()
     test2()
-    
+    test3()

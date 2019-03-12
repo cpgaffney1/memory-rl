@@ -50,6 +50,7 @@ class Config(object):
     learning_start = 50000
     use_memory = True
     use_rnn = False
+    hard = True
 
     assert(use_memory and not use_rnn)
 
