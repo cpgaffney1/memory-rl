@@ -322,7 +322,7 @@ def test2():
 def test3():
     env = EnvMaze(n=10)
     for _ in N_TRIALS:
-
+        pass
     
         
 if __name__ == '__main__':
