@@ -168,8 +168,7 @@ class ObservationSpace(object):
         if hard:
             self.graph = generate_hard_maze(n)
         else:
-            self.graph_obj = self.initialize_graph().KruskalMST()
-            self.graph = self.graph_obj.asEdgeList()
+            self.graph = self.initialize_graph().KruskalMST().asEdgeList()
         #self.save_graph()
         if self.verbose:
             print(self.graph)
