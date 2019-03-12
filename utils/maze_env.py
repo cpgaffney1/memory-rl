@@ -273,7 +273,7 @@ class EnvMaze(object):
         self.observation_space = ObservationSpace(shape, n, v, hard)
 
     def get_bfs_length(self):
-        return len(self.observation_space.graph_obj.shortest_path(0, int(self.n ** 2) - 1))
+        return 0 #len(self.observation_space.graph_obj.shortest_path(0, int(self.n ** 2) - 1))
 
     def reset(self):
         self.cur_state = 0
