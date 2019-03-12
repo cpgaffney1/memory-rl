@@ -195,7 +195,7 @@ class ReplayBuffer(object):
             return self.obs[start_idx:end_idx].transpose(1, 2, 0, 3).reshape(img_h, img_w, -1)
         '''
 
-        return self.obs[idx]
+        return self.obs[idx % self.size]
 
     def _encode_memory(self, idx):
         '''

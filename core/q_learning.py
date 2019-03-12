@@ -190,6 +190,7 @@ class QN(object):
         oos_evalution_result_list = []
 
         # interact with environment
+        prev_time = time.time()
         while t < self.config.nsteps_train:
             total_reward = 0
             state = self.env.reset()
@@ -228,6 +229,13 @@ class QN(object):
                 loss_eval, grad_eval = self.train_step(t, replay_buffer, lr_schedule.epsilon)
 
                 # logging stuff
+                time_log_freq = 1000
+                if t % time_log_freq == 0:
+                    with open(self.config.output_path + 'time_log.txt', 'a') as of:
+                        of.write('{}\n'.format(time.time() - prev_time))
+                        of.write('\n')
+                    prev_time = time.time()
+
                 if ((t > self.config.learning_start) and (t % self.config.log_freq == 0) and
                    (t % self.config.learning_freq == 0)):
                     self.update_averages(rewards, max_q_values, q_values, scores_eval)
