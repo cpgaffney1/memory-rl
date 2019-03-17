@@ -47,6 +47,7 @@ class Config():
     learning_start = 50000
     use_memory = True
     use_rnn = True
+    hard = True
 
     assert(use_rnn and use_memory)
 

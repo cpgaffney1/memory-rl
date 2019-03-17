@@ -13,7 +13,7 @@ def train_maze(output_path):
     config = Config()
     config.set_paths(output_path)
 
-    env = EnvMaze(n=config.maze_size)
+    env = EnvMaze(n=config.maze_size, hard=config.hard)
 
     # exploration strategy
     exp_schedule = LinearExploration(env, config.eps_begin,
