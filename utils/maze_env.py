@@ -3,6 +3,7 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 #from graphviz import Graph as GraphVizGraph
 
+from tqdm import tqdm
 import os
 os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
 from queue import Queue
@@ -142,20 +143,22 @@ class ObservationSpace(object):
         self.states = [self.state_0, self.state_1, self.state_2, self.state_3] 
 '''
 def generate_hard_maze(n):
-    nodes = np.arange(n)
+    nodes = np.arange(int(n ** 2))
     g = defaultdict(list)
 
     for node in nodes:
-        if node == n - 1:
+        if node == int(n ** 2) - 1:
             break
-        if node * 2 <= n ** 2 - 1:
-            g[node].append(node * 2)
-        else:
-            g[node].append(0)
         if node * 2 + 1 <= n ** 2 - 1:
             g[node].append(node * 2 + 1)
         else:
             g[node].append(0)
+        if node * 2 + 2 <= n ** 2 - 1:
+            g[node].append(node * 2 + 2)
+        else:
+            g[node].append(0)
+        g[node] += [0, 0]
+        np.random.shuffle(g[node])
 
     return g
 
@@ -165,6 +168,7 @@ class ObservationSpace(object):
         self.shape = shape
         self.n = n
         self.verbose = v
+        self.hard = hard
         if hard:
             self.graph = generate_hard_maze(n)
         else:
@@ -186,51 +190,34 @@ class ObservationSpace(object):
         features = np.zeros((3, 3))
         features[1,1] = 1.
         
-        north = i - self.n
-        if i == 0:
-            north = None
-        east = i + 1
-        if i % self.n == n - 1:
-            east = None
-        south = i + self.n
-        if i + self.n > int(self.n ** 2):
-            south = None
-        west = i - 1
-        if i % self.n == 0:
-            west = None
+        if self.hard:
+            features[0, 1] = 1.
+            features[2, 1] = 1.
+            features[1, 0] = 1.
+            features[1, 2] = 1.
+        else:
+            north = i - self.n
+            if i == 0:
+                north = None
+            east = i + 1
+            if i % self.n == n - 1:
+                east = None
+            south = i + self.n
+            if i + self.n > int(self.n ** 2):
+                south = None
+            west = i - 1
+            if i % self.n == 0:
+                west = None
+            
+            if north is not None and north in self.graph[i]:
+                features[0,1] = 1.
+            if east is not None and east in self.graph[i]:
+                features[1,2] = 1.
+            if south is not None and south in self.graph[i]:
+                features[2,1] = 1.
+            if west is not None and west in self.graph[i]:
+                features[1,0] = 1.
         
-        if north is not None and north in self.graph[i]:
-            features[0,1] = 1.
-        if east is not None and east in self.graph[i]:
-            features[1,2] = 1.
-        if south is not None and south in self.graph[i]:
-            features[2,1] = 1.
-        if west is not None and west in self.graph[i]:
-            features[1,0] = 1.
-        
-        '''
-        ne = None
-        if north is not None and east is not None:
-            ne = north + 1
-        se = None
-        if south is not None and east is not None:
-            se = south + 1
-        sw = None
-        if south is not None and west is not None:
-            sw = south - 1
-        nw = None
-        if north is not None and west is not None:
-            nw = north - 1
-        
-        if ne is not None and (ne in self.graph[north] or ne in self.graph[east]):
-            features[0,2] = 1.
-        if se is not None and (se in self.graph[south] or se in self.graph[east]):
-            features[2,2] = 1.
-        if sw is not None and (sw in self.graph[south] or sw in self.graph[west]):
-            features[2,0] = 1.
-        if nw is not None and (nw in self.graph[north] or nw in self.graph[west]):
-            features[0,0] = 1.
-        '''  
         
         if self.verbose:
             print(i)
@@ -268,6 +255,7 @@ class EnvMaze(object):
         self.num_iters = 0
         self.n = n
         self.reward_scale = 1.0
+        self.hard = hard
         self.visited = []
         self.action_space = ActionSpace()
         self.observation_space = ObservationSpace(shape, n, v, hard)
@@ -283,15 +271,17 @@ class EnvMaze(object):
 
     def check_next_step(self, action):
         assert (0 <= action and action < 4 and action is not None)
-        self.num_iters += 1
-        if action == 0:
-            ns = self.cur_state - self.n if self.cur_state - self.n >= 0 else self.cur_state
-        elif action == 1:
-            ns = self.cur_state + 1 if self.cur_state % self.n != self.n - 1 else self.cur_state
-        elif action == 2:
-            ns = self.cur_state + self.n if self.cur_state + self.n < int(self.n ** 2) else self.cur_state
+        if self.hard:
+            ns = self.observation_space.graph[self.cur_state][action]
         else:
-            ns = self.cur_state - 1 if self.cur_state % self.n != 0 else self.cur_state
+            if action == 0:
+                ns = self.cur_state - self.n if self.cur_state - self.n >= 0 else self.cur_state
+            elif action == 1:
+                ns = self.cur_state + 1 if self.cur_state % self.n != self.n - 1 else self.cur_state
+            elif action == 2:
+                ns = self.cur_state + self.n if self.cur_state + self.n < int(self.n ** 2) else self.cur_state
+            else:
+                ns = self.cur_state - 1 if self.cur_state % self.n != 0 else self.cur_state
         return ns
 
     def try_step(self, action):
@@ -309,6 +299,7 @@ class EnvMaze(object):
         return ns, reward
 
     def step(self, action):
+        self.num_iters += 1
         ns, reward = self.try_and_penalize_step(action)
         done = (ns == int(self.n**2) - 1)
         if reward == 0.:
@@ -334,7 +325,7 @@ def test2():
     N_TRIALS = 10000
     rewards = []
     completions = []
-    for _ in range(N_TRIALS):
+    for _ in tqdm(range(N_TRIALS)):
         reward = 0
         done = False
         env.reset()
